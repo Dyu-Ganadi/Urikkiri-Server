@@ -1,7 +1,7 @@
-package com.example.urikkiriserver.config;
+package com.example.urikkiriserver.global.config;
 
-import com.example.urikkiriserver.component.CustomHandshakeInterceptor;
-import com.example.urikkiriserver.component.WebSocketHandler;
+import com.example.urikkiriserver.global.websocket.CustomHandshakeInterceptor;
+import com.example.urikkiriserver.global.websocket.WebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.*;
