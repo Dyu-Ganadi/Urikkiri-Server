@@ -1,4 +1,4 @@
-package com.example.urikkiriserver.component;
+package com.example.urikkiriserver.global.websocket;
 
 import jakarta.annotation.Nullable;
 import lombok.NonNull;

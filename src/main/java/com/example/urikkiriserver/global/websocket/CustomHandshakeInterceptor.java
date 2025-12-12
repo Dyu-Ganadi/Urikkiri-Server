@@ -1,4 +1,4 @@
-package com.example.urikkiriserver.component;
+package com.example.urikkiriserver.global.websocket;
 
 import lombok.NonNull;
 import org.springframework.http.server.ServerHttpRequest;

@@ -1,4 +1,4 @@
-package com.example.urikkiriserver.utils;
+package com.example.urikkiriserver.global.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
