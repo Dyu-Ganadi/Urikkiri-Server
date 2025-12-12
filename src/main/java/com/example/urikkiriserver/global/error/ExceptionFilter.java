@@ -34,10 +34,7 @@ public class ExceptionFilter extends OncePerRequestFilter {
     }
 
     private void sendErrorMessage(HttpServletResponse response, ErrorCode errorCode) throws IOException {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-            .status(errorCode.getStatus())
-            .message(errorCode.getMessage())
-            .build();
+        ErrorResponse errorResponse = ErrorResponse.of(errorCode);
 
         response.setStatus(errorCode.getStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
