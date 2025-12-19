@@ -28,7 +28,6 @@ spring:
     header: ${HEADER}
     prefix: ${PREFIX}
     accessExp: ${ACCESS_EXP}
-    refreshExp: ${REFRESH_EXP}
 
   data:
     redis:
