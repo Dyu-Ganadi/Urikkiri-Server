@@ -21,7 +21,7 @@ public class LogoutService {
         String accessToken = jwtProvider.resolveToken(request);
 
         if(accessToken == null) {
-            throw ExpiredJwt.EXCEPTION;
+            throw InvalidJwt.EXCEPTION;
         }
 
         long expirationTime = jwtProvider.getExpiration(accessToken).getTime();
