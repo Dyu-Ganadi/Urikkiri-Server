@@ -14,12 +14,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, columnDefinition = "VARCHAR(30)")
+    @Column(nullable = false, unique = true, columnDefinition = "VARCHAR2(254)")
     private String email;
 
-    @Column(nullable = false, unique = true, columnDefinition = "VARCHAR(8)")
+    @Column(nullable = false, unique = true, columnDefinition = "VARCHAR2(15)")
     private String nickname;
 
-    @Column(nullable = false, columnDefinition = "CHAR(60)")
+    @Column(nullable = false, columnDefinition = "CHAR(64)")
     private String password;
 }
