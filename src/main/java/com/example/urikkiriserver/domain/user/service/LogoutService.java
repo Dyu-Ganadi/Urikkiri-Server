@@ -1,6 +1,5 @@
 package com.example.urikkiriserver.domain.user.service;
 
-import com.example.urikkiriserver.global.exception.ExpiredJwt;
 import com.example.urikkiriserver.global.exception.InvalidJwt;
 import com.example.urikkiriserver.global.security.jwt.JwtProvider;
 import jakarta.servlet.http.HttpServletRequest;
