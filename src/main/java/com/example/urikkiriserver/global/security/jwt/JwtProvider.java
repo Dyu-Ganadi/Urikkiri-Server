@@ -85,6 +85,10 @@ public class JwtProvider {
         return getClaims(token).getSubject();
     }
 
+    public Date getExpiration(String token) {
+        return getClaims(token).getExpiration();
+    }
+
     public Authentication authentication(String token) {
         UserDetails userDetails = authDetailsService.loadUserByUsername(getTokenSubject(token));
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
