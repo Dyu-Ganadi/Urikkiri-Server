@@ -33,7 +33,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (parseToken != null) {
             // 블랙리스트 검사
-            if (redisTemplate.hasKey("blacklist:" + parseToken)) {
+            if (Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + parseToken))) {
                 throw ExpiredJwt.EXCEPTION;
             }
 
