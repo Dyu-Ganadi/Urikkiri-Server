@@ -18,7 +18,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
-  jackson:
+  Jackson:
     property-naming-strategy: SNAKE_CASE
     serialization:
       fail-on-empty-beans: false
@@ -33,3 +33,4 @@ spring:
     redis:
       port: ${REDIS_PORT}
       host: ${REDIS_HOST}
+      password: ${REDIS_PASSWORD}
