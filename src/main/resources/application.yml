@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/urikkiri}
-    username: ${MYSQL_USERNAME:root}
-    password: ${MYSQL_PASSWORD:msua0691}
+    url: ${MYSQL_URL}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
 
   jpa:
     database: mysql
@@ -24,13 +24,12 @@ spring:
       fail-on-empty-beans: false
 
   jwt:
-    secretKey: ${JWT_SECRET:1234567890987654321234567890987654321234567890987654321}
-    header: ${HEADER:Authorization}
-    prefix: ${PREFIX:Bearer}
-    accessExp: ${ACCESS_EXP:18000}
+    secretKey: ${JWT_SECRET}
+    header: ${HEADER}
+    prefix: ${PREFIX}
+    accessExp: ${ACCESS_EXP}
 
   data:
     redis:
-      port: ${REDIS_PORT}
-      host: ${REDIS_HOST}
-      password: ${REDIS_PASSWORD}
+      port: ${REDIS_PORT:6379}
+      host: ${REDIS_HOST:localhost}
