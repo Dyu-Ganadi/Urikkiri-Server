@@ -22,4 +22,10 @@ public class User {
 
     @Column(nullable = false, columnDefinition = "CHAR(60)")
     private String password;
+
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 1")
+    private Integer level;
+
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer bananaxp;
 }

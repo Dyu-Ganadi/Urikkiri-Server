@@ -2,9 +2,11 @@ package com.example.urikkiriserver.domain.user.presentation;
 
 import com.example.urikkiriserver.domain.user.presentation.dto.request.LoginRequest;
 import com.example.urikkiriserver.domain.user.presentation.dto.request.SignUpRequest;
+import com.example.urikkiriserver.domain.user.presentation.dto.response.MyPageResponse;
 import com.example.urikkiriserver.domain.user.presentation.dto.response.TokenResponse;
 import com.example.urikkiriserver.domain.user.service.LoginService;
 import com.example.urikkiriserver.domain.user.service.LogoutService;
+import com.example.urikkiriserver.domain.user.service.QueryMyPageService;
 import com.example.urikkiriserver.domain.user.service.SignUpService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -20,6 +22,7 @@ public class UserController {
     private final SignUpService signUpService;
     private final LoginService loginService;
     private final LogoutService logoutService;
+    private final QueryMyPageService queryMyPageService;
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
@@ -37,5 +40,11 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(HttpServletRequest request) {
         logoutService.execute(request);
+    }
+
+    @GetMapping("/my")
+    @ResponseStatus(HttpStatus.OK)
+    public MyPageResponse getMyPage() {
+        return queryMyPageService.execute();
     }
 }
