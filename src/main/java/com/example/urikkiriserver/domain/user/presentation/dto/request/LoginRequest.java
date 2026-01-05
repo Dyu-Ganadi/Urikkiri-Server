@@ -11,7 +11,7 @@ public record LoginRequest(
         String email,
 
         @NotBlank
-        @Size(min=12, max = 64)
+        @Size(max = 16)
         String password
 ) {
 }
