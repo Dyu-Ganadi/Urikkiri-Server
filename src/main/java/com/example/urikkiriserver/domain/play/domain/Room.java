@@ -19,7 +19,7 @@ public class Room {
     private String code;
 
     @OneToOne()
-    @JoinColumn(name = "id", nullable = false)
+    @JoinColumn(name = "manager_id", nullable = false)
     private User manager;
 
 }

@@ -4,12 +4,11 @@ import com.example.urikkiriserver.domain.user.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity
-@Table(name = "tbl_participant")
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Entity(name = "tbl_participant")
 public class Participant {
 
     @Id
@@ -17,11 +16,11 @@ public class Participant {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id", nullable = false)
+    @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
     @Column(nullable = false)
