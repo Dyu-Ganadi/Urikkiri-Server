@@ -8,7 +8,8 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Entity(name = "tbl_participant")
+@Entity
+@Table(name = "tbl_participant")
 public class Participant {
 
     @Id
@@ -17,11 +18,11 @@ public class Participant {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private User userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
-    private Room room;
+    private Room roomId;
 
     @Column(nullable = false)
     private int bananaScore;

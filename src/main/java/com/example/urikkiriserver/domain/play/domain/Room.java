@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity(name = "tbl_room")
+@Table(name = "tbl_room")
 public class Room {
 
     @Id
@@ -18,7 +19,7 @@ public class Room {
     @Column(nullable = false, columnDefinition = "VARCHAR(6)")
     private String code;
 
-    @OneToOne()
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id", nullable = false)
     private User manager;
 

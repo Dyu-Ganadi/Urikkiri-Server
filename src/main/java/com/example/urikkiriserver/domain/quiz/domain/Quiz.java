@@ -7,7 +7,8 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Entity(name = "tbl_quiz")
+@Entity
+@Table(name = "tbl_quiz")
 public class Quiz {
 
     @Id
