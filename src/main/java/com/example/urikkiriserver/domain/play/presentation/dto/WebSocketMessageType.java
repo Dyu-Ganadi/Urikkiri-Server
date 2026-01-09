@@ -7,6 +7,7 @@ public enum WebSocketMessageType {
     ROOM_CREATED,
     JOIN_ROOM,
     ROOM_JOINED,
+    USER_JOINED,
     LEAVE_ROOM,
 
     ERROR
