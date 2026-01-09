@@ -26,4 +26,7 @@ public class Participant {
 
     @Column(nullable = false)
     private int bananaScore;
+
+    @Column(nullable = false, columnDefinition = "TINYINT(0)")
+    private boolean isExaminer;
 }
