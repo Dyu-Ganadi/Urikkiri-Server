@@ -1,4 +1,4 @@
-package com.example.urikkiriserver.domain.play.presentation;
+package com.example.urikkiriserver.domain.play.presentation.dto.response;
 
 public record RoomResponse(
     String roomCode
