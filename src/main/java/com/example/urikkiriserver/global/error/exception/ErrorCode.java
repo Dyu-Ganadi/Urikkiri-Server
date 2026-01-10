@@ -17,7 +17,15 @@ public enum ErrorCode {
 
     // jwt
     EXPIRED_JWT(HttpStatus.UNAUTHORIZED, "Expired JWT"),
-    INVALID_JWT(HttpStatus.UNAUTHORIZED, "Invalid JWT");
+    INVALID_JWT(HttpStatus.UNAUTHORIZED, "Invalid JWT"),
+
+    // websocket
+    WEBSOCKET_AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "WebSocket Authentication Required"),
+    WEBSOCKET_INVALID_MESSAGE_FORMAT(HttpStatus.BAD_REQUEST, "Invalid WebSocket Message Format"),
+    WEBSOCKET_ROOM_CODE_REQUIRED(HttpStatus.BAD_REQUEST, "Room Code is Required"),
+    WEBSOCKET_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "Room Not Found"),
+    WEBSOCKET_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "You are not a participant of this room"),
+    WEBSOCKET_ROOM_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Create Room");
 
     private final HttpStatus status;
     private final String message;

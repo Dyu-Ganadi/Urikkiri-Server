@@ -7,6 +7,7 @@ import com.example.urikkiriserver.global.websocket.dto.WebSocketMessage;
 import com.example.urikkiriserver.global.websocket.dto.WebSocketMessageType;
 import com.example.urikkiriserver.domain.play.service.CreateRoomService;
 import com.example.urikkiriserver.domain.user.domain.User;
+import com.example.urikkiriserver.global.websocket.exception.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nullable;
 import lombok.NonNull;
@@ -29,7 +30,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final RoomRepository roomRepository;
     private final ParticipantRepository participantRepository;
     private final CreateRoomService createRoomService;
-    private final CreateRoomService createRoomService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -39,7 +39,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         User user = (User) session.getAttributes().get("userPrincipal");
         if (user == null) {
             log.warn("User principal not found in session. Closing connection.");
-            closeSession(session, "Authentication required");
+            closeSession(session, WebSocketAuthenticationRequired.EXCEPTION);
             return;
         }
 
@@ -93,10 +93,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
         } catch (Exception e) {
             log.error("Error handling WebSocket message", e);
-            sendMessage(session, WebSocketMessage.of(
-                WebSocketMessageType.ERROR,
-                "Invalid message format"
-            ));
+            sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
         }
     }
 
@@ -119,29 +116,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         } catch (Exception e) {
             log.error("Error creating room for user {}", user.getNickname(), e);
-            sendMessage(session, WebSocketMessage.of(
-                WebSocketMessageType.ERROR,
-                "Failed to create room: " + e.getMessage()
-            ));
+            sendExceptionMessage(session, WebSocketRoomCreationFailed.EXCEPTION);
         }
     }
 
     private void handleJoinRoom(WebSocketSession session, User user, String roomCode) {
         if (roomCode == null || roomCode.isEmpty()) {
-            sendMessage(session, WebSocketMessage.of(
-                WebSocketMessageType.ERROR,
-                "Room code is required"
-            ));
+            sendExceptionMessage(session, WebSocketRoomCodeRequired.EXCEPTION);
             return;
         }
 
         // 방이 존재하는지 확인
         var roomOptional = roomRepository.findByCode(roomCode);
         if (roomOptional.isEmpty()) {
-            sendMessage(session, WebSocketMessage.of(
-                WebSocketMessageType.ERROR,
-                "Room does not exist"
-            ));
+            sendExceptionMessage(session, WebSocketRoomNotFound.EXCEPTION);
             return;
         }
 
@@ -154,10 +142,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         );
 
         if (!isParticipant) {
-            sendMessage(session, WebSocketMessage.of(
-                WebSocketMessageType.ERROR,
-                "You are not a participant of this room"
-            ));
+            sendExceptionMessage(session, WebSocketNotParticipant.EXCEPTION);
             return;
         }
 
@@ -200,16 +185,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
             user.getNickname(), roomCode, participants.size());
     }
 
-    private void closeSession(WebSocketSession session, String reason) {
+    private void closeSession(WebSocketSession session, com.example.urikkiriserver.global.error.exception.UrikkiriException exception) {
         try {
-            sendMessage(session, WebSocketMessage.of(
-                WebSocketMessageType.ERROR,
-                reason
-            ));
+            sendExceptionMessage(session, exception);
             session.close(CloseStatus.POLICY_VIOLATION);
         } catch (IOException e) {
             log.error("Error closing WebSocket session", e);
         }
+    }
+
+    private void sendExceptionMessage(WebSocketSession session, com.example.urikkiriserver.global.error.exception.UrikkiriException exception) {
+        sendMessage(session, WebSocketMessage.of(
+            WebSocketMessageType.ERROR,
+            exception.getErrorCode().getMessage()
+        ));
     }
 
     private void sendMessage(WebSocketSession session, WebSocketMessage message) {
