@@ -2,9 +2,9 @@ package com.example.urikkiriserver.global.websocket;
 
 import com.example.urikkiriserver.domain.play.domain.repository.ParticipantRepository;
 import com.example.urikkiriserver.domain.play.domain.repository.RoomRepository;
-import com.example.urikkiriserver.domain.play.presentation.dto.ParticipantInfo;
-import com.example.urikkiriserver.domain.play.presentation.dto.WebSocketMessage;
-import com.example.urikkiriserver.domain.play.presentation.dto.WebSocketMessageType;
+import com.example.urikkiriserver.global.websocket.dto.ParticipantInfo;
+import com.example.urikkiriserver.global.websocket.dto.WebSocketMessage;
+import com.example.urikkiriserver.global.websocket.dto.WebSocketMessageType;
 import com.example.urikkiriserver.domain.play.service.CreateRoomService;
 import com.example.urikkiriserver.domain.user.domain.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -101,8 +101,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void handleCreateRoom(WebSocketSession session, User user) {
         try {
-            // CreateRoomService를 통해 방 생성 (Room + Participant)
-            var roomResponse = createRoomService.execute();
+            var roomResponse = createRoomService.execute(user);
             String roomCode = roomResponse.roomCode();
 
             // 세션을 방에 추가

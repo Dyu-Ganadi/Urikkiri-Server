@@ -4,7 +4,7 @@ import com.example.urikkiriserver.domain.play.domain.Participant;
 import com.example.urikkiriserver.domain.play.domain.Room;
 import com.example.urikkiriserver.domain.play.domain.repository.ParticipantRepository;
 import com.example.urikkiriserver.domain.play.domain.repository.RoomRepository;
-import com.example.urikkiriserver.domain.play.presentation.RoomResponse;
+import com.example.urikkiriserver.domain.play.presentation.dto.response.RoomResponse;
 import com.example.urikkiriserver.domain.user.domain.User;
 import com.example.urikkiriserver.domain.user.service.UserFacade;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +23,11 @@ public class CreateRoomService {
     private final Random random = new Random();
 
     @Transactional
-    public RoomResponse execute() {
-        User user = userFacade.getCurrentUser();
+    public RoomResponse execute(User user) {
+        return createRoom(user);
+    }
 
+    private RoomResponse createRoom(User user) {
         String roomCode = generateRoomCode();
 
         Room savedRoom = roomRepository.save(
