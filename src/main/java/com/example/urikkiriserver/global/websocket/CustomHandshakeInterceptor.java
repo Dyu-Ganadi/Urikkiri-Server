@@ -23,15 +23,34 @@ public class CustomHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response,
                                    @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes) {
-        // Authorization 헤더에서 토큰 추출
-        List<String> authHeaders = request.getHeaders().get("Authorization");
-        if (authHeaders == null || authHeaders.isEmpty()) {
-            return false;
+        String token = null;
+
+        // 1. 쿼리 파라미터에서 토큰 추출 (브라우저 환경용)
+        String query = request.getURI().getQuery();
+        if (query != null && query.contains("token=")) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                if (param.startsWith("token=")) {
+                    token = param.substring(6); // "token=" 이후의 값
+                    break;
+                }
+            }
         }
 
-        String token = authHeaders.get(0);
-        if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
+        // 2. Authorization 헤더에서 토큰 추출 (네이티브 앱 등에서 사용 가능)
+        if (token == null) {
+            List<String> authHeaders = request.getHeaders().get("Authorization");
+            if (authHeaders != null && !authHeaders.isEmpty()) {
+                token = authHeaders.get(0);
+                if (token.startsWith("Bearer ")) {
+                    token = token.substring(7);
+                }
+            }
+        }
+
+        // 토큰이 없으면 연결 거부
+        if (token == null || token.isEmpty()) {
+            return false;
         }
 
         try {
