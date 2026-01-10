@@ -6,7 +6,6 @@ import com.example.urikkiriserver.domain.play.domain.repository.ParticipantRepos
 import com.example.urikkiriserver.domain.play.domain.repository.RoomRepository;
 import com.example.urikkiriserver.domain.play.presentation.dto.response.RoomResponse;
 import com.example.urikkiriserver.domain.user.domain.User;
-import com.example.urikkiriserver.domain.user.service.UserFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +16,6 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class CreateRoomService {
 
-    private final UserFacade userFacade;
     private final RoomRepository roomRepository;
     private final ParticipantRepository participantRepository;
     private final Random random = new Random();
