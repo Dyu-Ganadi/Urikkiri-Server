@@ -2,15 +2,15 @@
 
 ## 📡 연결 흐름
 
-### 1. WebSocket 연결 수립
+### WebSocket 연결 수립
 ```
-Client → ws://localhost:8080/ws (JWT 인증)
+Client → ws://localhost:8080/ws (Authorization: Bearer {JWT})
   ↓
 CustomHandshakeInterceptor (JWT 검증)
   ↓
 WebSocketHandler.afterConnectionEstablished()
   ↓
-{ "type": "CONNECTED", "message": "..." }
+Client: { "type": "CONNECTED", "message": "WebSocket connection established..." }
 ```
 
 ## 🔐 인증 프로세스
@@ -18,24 +18,48 @@ WebSocketHandler.afterConnectionEstablished()
 ### CustomHandshakeInterceptor
 ```java
 @Component
+@RequiredArgsConstructor
 public class CustomHandshakeInterceptor implements HandshakeInterceptor {
+    
+    private final JwtProvider jwtProvider;
+
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, 
+    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) {
-        // Security Context에서 인증된 사용자 정보 추출
-        if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            attributes.put("userPrincipal", 
-                SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        // Authorization 헤더에서 토큰 추출
+        List<String> authHeaders = request.getHeaders().get("Authorization");
+        if (authHeaders == null || authHeaders.isEmpty()) {
+            return false;
         }
-        return true;
+
+        String token = authHeaders.get(0);
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        try {
+            // JWT 토큰 검증 및 인증 정보 추출
+            Authentication authentication = jwtProvider.authentication(token);
+
+            // AuthDetails에서 실제 User 객체 추출
+            if (authentication.getPrincipal() instanceof AuthDetails authDetails) {
+                attributes.put("userPrincipal", authDetails.getUser());
+                return true;
+            }
+
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
 ```
 
 **역할:**
-- HTTP 요청이 Spring Security 필터를 통과한 후 실행
-- 인증된 사용자 정보를 WebSocket 세션에 복사
-- JWT 토큰이 유효하지 않으면 연결 거부
+- Authorization 헤더에서 JWT 토큰 추출 (`Bearer {token}` 형식)
+- `JwtProvider`를 통해 토큰 검증 및 `Authentication` 객체 생성
+- `AuthDetails`에서 실제 `User` 엔티티 추출하여 세션 attributes에 저장
+- JWT 토큰이 없거나 유효하지 않으면 연결 거부 (`return false`)
 
 ## 🎯 연결 엔드포인트
 
@@ -60,25 +84,21 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
 ## 📨 메시지 타입
 
-### WebSocketMessageType
+### WebSocketMessageType (global/websocket/dto)
 ```java
 public enum WebSocketMessageType {
-    // 연결 관련
     CONNECTED,           // 연결 성공
-    
-    // 방 관련
     CREATE_ROOM,         // 방 생성 요청
     ROOM_CREATED,        // 방 생성 완료
     JOIN_ROOM,           // 방 참가 요청
     ROOM_JOINED,         // 방 참가 완료
+    USER_JOINED,         // 새 사용자 입장 알림
     LEAVE_ROOM,          // 방 나가기
-    
-    // 에러
     ERROR                // 에러 발생
 }
 ```
 
-### WebSocketMessage (record)
+### WebSocketMessage (global/websocket/dto)
 ```java
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record WebSocketMessage(
@@ -88,21 +108,28 @@ public record WebSocketMessage(
     String message
 ) {
     // 정적 팩토리 메서드
-    public static WebSocketMessage of(WebSocketMessageType type, String message) {
-        return new WebSocketMessage(type, null, null, message);
-    }
-    
-    public static WebSocketMessage of(WebSocketMessageType type, String roomCode, String message) {
-        return new WebSocketMessage(type, roomCode, null, message);
-    }
+    public static WebSocketMessage of(WebSocketMessageType type, String message);
+    public static WebSocketMessage of(WebSocketMessageType type, String roomCode, String message);
+    public static WebSocketMessage withData(WebSocketMessageType type, String roomCode, 
+                                           Object data, String message);
+}
+```
+
+### ParticipantInfo (global/websocket/dto)
+```java
+public record ParticipantInfo(
+    Long userId,
+    String nickname,
+    int bananaScore
+) {
+    public static ParticipantInfo from(Participant participant);
 }
 ```
 
 ## 🚀 클라이언트 구현
 
-### JavaScript 예제
+### JavaScript 기본 연결
 
-#### 1. 기본 연결
 ```javascript
 // JWT 토큰 준비 (로그인 후 받은 토큰)
 const token = localStorage.getItem('jwtToken');
@@ -117,7 +144,11 @@ ws.onopen = () => {
 ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
     console.log('📨 서버 메시지:', message);
-    handleMessage(message);
+    
+    if (message.type === 'CONNECTED') {
+        console.log('✅ 서버로부터 연결 확인:', message.message);
+        // 이제 다른 메시지를 보낼 수 있습니다
+    }
 };
 
 ws.onerror = (error) => {
@@ -129,67 +160,31 @@ ws.onclose = (event) => {
 };
 ```
 
-#### 2. 메시지 핸들링
+### 메시지 송신 예제
+
 ```javascript
-function handleMessage(message) {
-    switch (message.type) {
-        case 'CONNECTED':
-            console.log('✅ 서버 연결 완료:', message.message);
-            // 방 생성 또는 참가 가능
-            break;
-            
-        case 'ROOM_CREATED':
-            console.log('🎉 방 생성 완료:', message.roomCode);
-            // 방 코드를 UI에 표시
-            displayRoomCode(message.roomCode);
-            break;
-            
-        case 'ROOM_JOINED':
-            console.log('✅ 방 참가 완료:', message.roomCode);
-            // 게임 화면으로 이동
-            startGame(message.roomCode);
-            break;
-            
-        case 'ERROR':
-            console.error('❌ 에러:', message.message);
-            showError(message.message);
-            break;
+// 메시지 전송 함수
+function sendMessage(type, data = {}) {
+    if (ws.readyState === WebSocket.OPEN) {
+        const message = { type, ...data };
+        ws.send(JSON.stringify(message));
+        console.log('📤 메시지 전송:', message);
+    } else {
+        console.error('WebSocket이 연결되지 않았습니다.');
     }
 }
-```
 
-#### 3. 방 생성
-```javascript
-function createRoom() {
-    const message = {
-        type: 'CREATE_ROOM'
-    };
-    ws.send(JSON.stringify(message));
-}
-
-// 사용
+// 사용 예시
 ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
     
     if (msg.type === 'CONNECTED') {
-        createRoom(); // 연결 성공 후 방 생성
+        // 연결 후 원하는 메시지 전송
+        sendMessage('CREATE_ROOM');
+        // 또는
+        sendMessage('JOIN_ROOM', { roomCode: '123456' });
     }
 };
-```
-
-#### 4. 방 참가
-```javascript
-function joinRoom(roomCode) {
-    const message = {
-        type: 'JOIN_ROOM',
-        roomCode: roomCode
-    };
-    ws.send(JSON.stringify(message));
-}
-
-// 사용
-const roomCode = prompt('방 코드를 입력하세요:');
-joinRoom(roomCode);
 ```
 
 ### TypeScript 예제
@@ -201,6 +196,7 @@ enum WebSocketMessageType {
     ROOM_CREATED = 'ROOM_CREATED',
     JOIN_ROOM = 'JOIN_ROOM',
     ROOM_JOINED = 'ROOM_JOINED',
+    USER_JOINED = 'USER_JOINED',
     ERROR = 'ERROR'
 }
 
@@ -213,7 +209,6 @@ interface WebSocketMessage {
 
 class WebSocketClient {
     private ws: WebSocket;
-    private roomCode: string | null = null;
 
     constructor(private url: string) {
         this.connect();
@@ -243,37 +238,19 @@ class WebSocketClient {
     private handleMessage(message: WebSocketMessage): void {
         switch (message.type) {
             case WebSocketMessageType.CONNECTED:
-                console.log('서버 연결 완료');
-                break;
-                
-            case WebSocketMessageType.ROOM_CREATED:
-                this.roomCode = message.roomCode!;
-                console.log('방 생성:', this.roomCode);
-                break;
-                
-            case WebSocketMessageType.ROOM_JOINED:
-                this.roomCode = message.roomCode!;
-                console.log('방 참가:', this.roomCode);
+                console.log('서버 연결 완료:', message.message);
                 break;
                 
             case WebSocketMessageType.ERROR:
                 console.error('에러:', message.message);
                 break;
+                
+            default:
+                console.log('메시지 수신:', message);
         }
     }
 
-    public createRoom(): void {
-        this.send({ type: WebSocketMessageType.CREATE_ROOM });
-    }
-
-    public joinRoom(roomCode: string): void {
-        this.send({
-            type: WebSocketMessageType.JOIN_ROOM,
-            roomCode: roomCode
-        });
-    }
-
-    private send(message: Partial<WebSocketMessage>): void {
+    public send(message: Partial<WebSocketMessage>): void {
         if (this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(message));
         }
@@ -286,25 +263,21 @@ class WebSocketClient {
 
 // 사용
 const client = new WebSocketClient('ws://localhost:8080/ws');
-client.createRoom();
 ```
 
-## 🔄 연결 상태 관리
+## 🔄 세션 관리
 
-### 세션 관리자
+### WebSocketSessionManager
 ```java
 @Component
 public class WebSocketSessionManager {
     // roomCode -> Set<WebSocketSession>
     private final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
     
-    // 방에 세션 추가
     public void addSession(String roomCode, WebSocketSession session) {
-        roomSessions.computeIfAbsent(roomCode, k -> new CopyOnWriteArraySet<>())
-                    .add(session);
+        roomSessions.computeIfAbsent(roomCode, k -> new CopyOnWriteArraySet<>()).add(session);
     }
     
-    // 방에서 세션 제거
     public void removeSession(String roomCode, WebSocketSession session) {
         Set<WebSocketSession> sessions = roomSessions.get(roomCode);
         if (sessions != null) {
@@ -315,12 +288,10 @@ public class WebSocketSessionManager {
         }
     }
     
-    // 특정 방의 모든 세션 조회
     public Set<WebSocketSession> getSessionsByRoom(String roomCode) {
         return roomSessions.getOrDefault(roomCode, Set.of());
     }
     
-    // 세션이 속한 방 코드 찾기
     public String getRoomCodeBySession(WebSocketSession session) {
         return roomSessions.entrySet().stream()
                 .filter(entry -> entry.getValue().contains(session))
@@ -347,36 +318,9 @@ public class WebSocketSessionManager {
     "message": "Authentication required"
 }
 ```
-→ JWT 토큰이 없거나 만료됨
+→ JWT 토큰이 없거나 만료됨 (CustomHandshakeInterceptor에서 연결 거부)
 
-**2. 방 코드 없음**
-```json
-{
-    "type": "ERROR",
-    "message": "Room code is required"
-}
-```
-→ JOIN_ROOM 메시지에 roomCode가 없음
-
-**3. 방이 존재하지 않음**
-```json
-{
-    "type": "ERROR",
-    "message": "Room does not exist"
-}
-```
-→ 유효하지 않은 방 코드
-
-**4. 참가 권한 없음**
-```json
-{
-    "type": "ERROR",
-    "message": "You are not a participant of this room"
-}
-```
-→ Participant로 등록되지 않은 사용자
-
-**5. 잘못된 메시지 형식**
+**2. 잘못된 메시지 형식**
 ```json
 {
     "type": "ERROR",
@@ -409,77 +353,6 @@ function reconnect() {
 }
 ```
 
-## 🎮 실제 사용 시나리오
-
-### 시나리오 1: 방 생성 후 퀴즈 진행
-
-```javascript
-let ws;
-let currentRoomCode;
-
-// 1. WebSocket 연결
-function connectWebSocket() {
-    ws = new WebSocket('ws://localhost:8080/ws');
-    
-    ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        
-        switch (msg.type) {
-            case 'CONNECTED':
-                // 2. 방 생성 요청
-                ws.send(JSON.stringify({ type: 'CREATE_ROOM' }));
-                break;
-                
-            case 'ROOM_CREATED':
-                // 3. 방 코드 저장
-                currentRoomCode = msg.roomCode;
-                console.log('방 코드:', currentRoomCode);
-                
-                // 4. 퀴즈 출제 가능
-                // submitQuiz();
-                break;
-        }
-    };
-}
-
-connectWebSocket();
-```
-
-### 시나리오 2: 방 참가 후 대기
-
-```javascript
-function joinExistingRoom(roomCode) {
-    ws = new WebSocket('ws://localhost:8080/ws');
-    
-    ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        
-        switch (msg.type) {
-            case 'CONNECTED':
-                // 방 참가 요청
-                ws.send(JSON.stringify({
-                    type: 'JOIN_ROOM',
-                    roomCode: roomCode
-                }));
-                break;
-                
-            case 'ROOM_JOINED':
-                console.log('방 참가 성공!');
-                showGameScreen();
-                break;
-                
-            case 'ERROR':
-                alert('방 참가 실패: ' + msg.message);
-                break;
-        }
-    };
-}
-
-// 사용
-const code = document.getElementById('roomCodeInput').value;
-joinExistingRoom(code);
-```
-
 ## 🔍 디버깅 팁
 
 ### 1. 브라우저 개발자 도구
@@ -500,18 +373,17 @@ ws.onmessage = (event) => {
     handleMessage(msg);
 };
 
-ws.send = (function(original) {
-    return function(data) {
-        console.log('📤 보낸 메시지:', data);
-        return original.call(this, data);
-    };
-})(ws.send);
+// 전송 메시지 로깅
+const originalSend = ws.send.bind(ws);
+ws.send = function(data) {
+    console.log('📤 보낸 메시지:', data);
+    return originalSend(data);
+};
 ```
 
 ### 3. 서버 로그 확인
 ```
-User testuser connected to WebSocket (waiting for room action)
-User testuser created and joined room 123456
+User {nickname} connected to WebSocket (waiting for room action)
 ```
 
 ## 📋 체크리스트
@@ -523,15 +395,12 @@ User testuser created and joined room 123456
 
 ### 연결 후
 - [ ] `CONNECTED` 메시지 수신 확인
-- [ ] 방 생성/참가 메시지 전송 가능
+- [ ] 메시지 송수신 가능
 - [ ] 에러 핸들링 구현
 
 ### 테스트
 - [ ] 정상 연결 테스트
 - [ ] 인증 실패 테스트 (토큰 없이)
-- [ ] 방 생성 테스트
-- [ ] 방 참가 테스트 (유효한 코드)
-- [ ] 방 참가 실패 테스트 (잘못된 코드)
 - [ ] 재연결 테스트
 
 ## 🚀 성능 최적화
@@ -579,7 +448,20 @@ class WebSocketQueue {
 
 ## 📚 참고 자료
 
-- Spring WebSocket 공식 문서
-- WebSocket API (MDN)
-- RFC 6455 - The WebSocket Protocol
+- [Spring WebSocket 공식 문서](https://docs.spring.io/spring-framework/reference/web/websocket.html)
+- [WebSocket API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
+- [RFC 6455 - The WebSocket Protocol](https://datatracker.ietf.org/doc/html/rfc6455)
+
+## 🔗 관련 파일
+
+### 서버 코드
+- `CustomHandshakeInterceptor.java` - JWT 인증 처리
+- `WebSocketHandler.java` - 메시지 핸들링
+- `WebSocketSessionManager.java` - 세션 관리
+- `SecurityConfig.java` - Security 설정 (`/ws/**` 허용)
+
+### DTO
+- `WebSocketMessage.java` - 메시지 포맷 (global/websocket/dto)
+- `WebSocketMessageType.java` - 메시지 타입 (global/websocket/dto)
+- `ParticipantInfo.java` - 참가자 정보 (global/websocket/dto)
 
