@@ -8,13 +8,11 @@ import com.example.urikkiriserver.domain.play.presentation.RoomResponse;
 import com.example.urikkiriserver.domain.user.domain.User;
 import com.example.urikkiriserver.domain.user.service.UserFacade;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Random;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CreateRoomService {
