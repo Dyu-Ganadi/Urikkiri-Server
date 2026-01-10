@@ -4,7 +4,7 @@
 
 ### WebSocket 연결 수립
 ```
-Client → ws://localhost:8080/ws (Authorization: Bearer {JWT})
+Client → ws://localhost:8080/ws?token={JWT}
   ↓
 CustomHandshakeInterceptor (JWT 검증)
   ↓
@@ -12,6 +12,10 @@ WebSocketHandler.afterConnectionEstablished()
   ↓
 Client: { "type": "CONNECTED", "message": "WebSocket connection established..." }
 ```
+
+**토큰 전달 방법:**
+- **권장 (브라우저 환경)**: 쿼리 파라미터 - `ws://localhost:8080/ws?token={JWT}`
+- **대안 (네이티브 앱)**: Authorization 헤더 - `Authorization: Bearer {JWT}`
 
 ## 🔐 인증 프로세스
 
@@ -26,15 +30,34 @@ public class CustomHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) {
-        // Authorization 헤더에서 토큰 추출
-        List<String> authHeaders = request.getHeaders().get("Authorization");
-        if (authHeaders == null || authHeaders.isEmpty()) {
-            return false;
+        String token = null;
+
+        // 1. 쿼리 파라미터에서 토큰 추출 (브라우저 환경용)
+        String query = request.getURI().getQuery();
+        if (query != null && query.contains("token=")) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                if (param.startsWith("token=")) {
+                    token = param.substring(6); // "token=" 이후의 값
+                    break;
+                }
+            }
         }
 
-        String token = authHeaders.get(0);
-        if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
+        // 2. Authorization 헤더에서 토큰 추출 (네이티브 앱 등에서 사용 가능)
+        if (token == null) {
+            List<String> authHeaders = request.getHeaders().get("Authorization");
+            if (authHeaders != null && !authHeaders.isEmpty()) {
+                token = authHeaders.get(0);
+                if (token.startsWith("Bearer ")) {
+                    token = token.substring(7);
+                }
+            }
+        }
+
+        // 토큰이 없으면 연결 거부
+        if (token == null || token.isEmpty()) {
+            return false;
         }
 
         try {
@@ -56,7 +79,10 @@ public class CustomHandshakeInterceptor implements HandshakeInterceptor {
 ```
 
 **역할:**
-- Authorization 헤더에서 JWT 토큰 추출 (`Bearer {token}` 형식)
+- **우선 순위 1**: 쿼리 파라미터에서 JWT 토큰 추출 (`?token={JWT}` 형식)
+  - 브라우저 WebSocket API는 커스텀 헤더를 설정할 수 없으므로 쿼리 파라미터 사용
+- **우선 순위 2**: Authorization 헤더에서 JWT 토큰 추출 (`Bearer {token}` 형식)
+  - 네이티브 앱이나 커스텀 헤더를 지원하는 WebSocket 클라이언트용
 - `JwtProvider`를 통해 토큰 검증 및 `Authentication` 객체 생성
 - `AuthDetails`에서 실제 `User` 엔티티 추출하여 세션 attributes에 저장
 - JWT 토큰이 없거나 유효하지 않으면 연결 거부 (`return false`)
@@ -134,8 +160,8 @@ public record ParticipantInfo(
 // JWT 토큰 준비 (로그인 후 받은 토큰)
 const token = localStorage.getItem('jwtToken');
 
-// WebSocket 연결
-const ws = new WebSocket('ws://localhost:8080/ws');
+// WebSocket 연결 (쿼리 파라미터로 토큰 전달)
+const ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
 
 ws.onopen = () => {
     console.log('✅ WebSocket 연결 성공');
@@ -159,6 +185,8 @@ ws.onclose = (event) => {
     console.log('🔌 연결 종료:', event.code, event.reason);
 };
 ```
+
+**중요:** 브라우저의 표준 WebSocket API는 커스텀 헤더(Authorization 등)를 설정할 수 없습니다. 따라서 토큰을 **쿼리 파라미터**로 전달해야 합니다.
 
 ### 메시지 송신 예제
 
@@ -210,12 +238,14 @@ interface WebSocketMessage {
 class WebSocketClient {
     private ws: WebSocket;
 
-    constructor(private url: string) {
+    constructor(private url: string, private token: string) {
         this.connect();
     }
 
     private connect(): void {
-        this.ws = new WebSocket(this.url);
+        // 토큰을 쿼리 파라미터로 추가
+        const wsUrl = `${this.url}?token=${this.token}`;
+        this.ws = new WebSocket(wsUrl);
         
         this.ws.onopen = () => {
             console.log('✅ WebSocket 연결 성공');
@@ -262,7 +292,8 @@ class WebSocketClient {
 }
 
 // 사용
-const client = new WebSocketClient('ws://localhost:8080/ws');
+const token = localStorage.getItem('jwtToken');
+const client = new WebSocketClient('ws://localhost:8080/ws', token);
 ```
 
 ## 🔄 세션 관리
@@ -318,7 +349,8 @@ public class WebSocketSessionManager {
     "message": "Authentication required"
 }
 ```
-→ JWT 토큰이 없거나 만료됨 (CustomHandshakeInterceptor에서 연결 거부)
+→ JWT 토큰이 없거나 만료됨 (CustomHandshakeInterceptor에서 연결 거부)  
+→ 쿼리 파라미터 `?token=...` 또는 Authorization 헤더에 유효한 JWT 토큰을 포함해야 함
 
 **2. 잘못된 메시지 형식**
 ```json
@@ -348,7 +380,8 @@ ws.onclose = (event) => {
 function reconnect() {
     setTimeout(() => {
         console.log('재연결 시도...');
-        ws = new WebSocket('ws://localhost:8080/ws');
+        const token = localStorage.getItem('jwtToken');
+        ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
     }, 3000);
 }
 ```
@@ -390,7 +423,8 @@ User {nickname} connected to WebSocket (waiting for room action)
 
 ### 연결 전
 - [ ] JWT 토큰 준비됨
-- [ ] WebSocket URL 확인 (`ws://localhost:8080/ws`)
+- [ ] WebSocket URL 확인 (`ws://localhost:8080/ws?token={JWT}`)
+- [ ] 토큰을 쿼리 파라미터로 전달 (브라우저 환경)
 - [ ] CORS 설정 확인
 
 ### 연결 후
@@ -409,12 +443,14 @@ User {nickname} connected to WebSocket (waiting for room action)
 ```javascript
 // ❌ 나쁜 예: 매번 새로운 연결
 function sendMessage(msg) {
-    const ws = new WebSocket('ws://localhost:8080/ws');
+    const token = localStorage.getItem('jwtToken');
+    const ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
     ws.onopen = () => ws.send(JSON.stringify(msg));
 }
 
 // ✅ 좋은 예: 연결 재사용
-const ws = new WebSocket('ws://localhost:8080/ws');
+const token = localStorage.getItem('jwtToken');
+const ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
 function sendMessage(msg) {
     if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(msg));
@@ -425,8 +461,8 @@ function sendMessage(msg) {
 ### 2. 메시지 큐
 ```javascript
 class WebSocketQueue {
-    constructor(url) {
-        this.ws = new WebSocket(url);
+    constructor(url, token) {
+        this.ws = new WebSocket(`${url}?token=${token}`);
         this.queue = [];
         
         this.ws.onopen = () => {
