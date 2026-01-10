@@ -29,7 +29,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final RoomRepository roomRepository;
     private final ParticipantRepository participantRepository;
     private final CreateRoomService createRoomService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final CreateRoomService createRoomService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void afterConnectionEstablished(@Nullable WebSocketSession session) {
