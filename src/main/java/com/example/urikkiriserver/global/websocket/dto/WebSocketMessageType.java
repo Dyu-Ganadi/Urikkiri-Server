@@ -1,4 +1,4 @@
-package com.example.urikkiriserver.domain.play.presentation.dto;
+package com.example.urikkiriserver.global.websocket.dto;
 
 public enum WebSocketMessageType {
     CONNECTED,
@@ -12,3 +12,4 @@ public enum WebSocketMessageType {
 
     ERROR
 }
+

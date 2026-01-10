@@ -1,4 +1,4 @@
-package com.example.urikkiriserver.domain.play.presentation.dto;
+package com.example.urikkiriserver.global.websocket.dto;
 
 import com.example.urikkiriserver.domain.play.domain.Participant;
 
@@ -15,3 +15,4 @@ public record ParticipantInfo(
         );
     }
 }
+
