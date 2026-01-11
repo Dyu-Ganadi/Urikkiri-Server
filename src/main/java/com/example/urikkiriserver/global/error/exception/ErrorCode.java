@@ -30,7 +30,13 @@ public enum ErrorCode {
     // play - room
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "Room Not Found"),
     ROOM_ALREADY_FULL(HttpStatus.BAD_REQUEST, "Room is Already Full"),
-    ALREADY_IN_ROOM(HttpStatus.CONFLICT, "User is Already in This Room");
+    ALREADY_IN_ROOM(HttpStatus.CONFLICT, "User is Already in This Room"),
+
+    // quiz
+    QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "Quiz Not Found"),
+
+    // card
+    CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "Card Not Found");
 
     private final HttpStatus status;
     private final String message;
