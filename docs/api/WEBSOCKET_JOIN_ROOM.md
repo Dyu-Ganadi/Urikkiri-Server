@@ -69,33 +69,41 @@
 {
   "type": "GAME_START",
   "roomCode": "764185",
-  "data": [
-    {
-      "userId": 1,
-      "nickname": "방장",
-      "level": 5
-    },
-    {
-      "userId": 2,
-      "nickname": "참가자1",
-      "level": 3
-    },
-    {
-      "userId": 3,
-      "nickname": "참가자2",
-      "level": 2
-    },
-    {
-      "userId": 4,
-      "nickname": "참가자3",
-      "level": 7
+  "data": {
+    "participants": [
+      {
+        "userId": 1,
+        "nickname": "방장",
+        "level": 5
+      },
+      {
+        "userId": 2,
+        "nickname": "참가자1",
+        "level": 3
+      },
+      {
+        "userId": 3,
+        "nickname": "참가자2",
+        "level": 2
+      },
+      {
+        "userId": 4,
+        "nickname": "참가자3",
+        "level": 7
+      }
+    ],
+    "question": {
+      "quizId": 42,
+      "content": "가장 좋아하는 음식은?"
     }
-  ],
+  },
   "message": "Game is starting! All 4 players are ready."
 }
 ```
 
-**중요:** 이 메시지는 서버에서 자동으로 전송되며, 클라이언트는 이 메시지를 받으면 즉시 게임 화면으로 전환해야 합니다.
+**중요:** 
+- 이 메시지는 서버에서 자동으로 전송되며, **모든 참가자가 동일한 질문을 받습니다**.
+- 클라이언트는 이 메시지를 받으면 즉시 게임 화면으로 전환하고, **별도로 질문 조회 API를 호출할 필요 없이** `data.question`을 사용하면 됩니다.
 
 ### 필드 설명
 - `type` (string): 응답 타입
@@ -186,7 +194,8 @@ class GameRoom {
       
       case 'GAME_START':
         console.log('게임 시작!');
-        console.log('전체 참가자:', message.data);
+        console.log('전체 참가자:', message.data.participants);
+        console.log('질문:', message.data.question.content);
         this.startGame(message.data);
         break;
       
@@ -223,15 +232,19 @@ class GameRoom {
     status.textContent = `대기 중... (${currentCount}/4)`;
   }
 
-  startGame(participants) {
+  startGame(data) {
     // 대기 화면 숨기기
     document.getElementById('waitingScreen').style.display = 'none';
     
     // 게임 화면 표시
     document.getElementById('gameScreen').style.display = 'block';
     
+    // 질문 표시
+    document.getElementById('question').textContent = data.question.content;
+    
     // 게임 초기화
-    console.log('게임 시작! 참가자:', participants);
+    console.log('게임 시작! 참가자:', data.participants);
+    console.log('질문:', data.question.content);
   }
 }
 
@@ -264,6 +277,7 @@ function JoinRoomPage() {
   const [error, setError] = useState(null);
   const [isJoined, setIsJoined] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [question, setQuestion] = useState(null);
   const wsRef = useRef(null);
 
   useEffect(() => {
@@ -286,7 +300,8 @@ function JoinRoomPage() {
           break;
         
         case 'GAME_START':
-          setParticipants(message.data);
+          setParticipants(message.data.participants);
+          setQuestion(message.data.question);
           setGameStarted(true);
           break;
         
@@ -317,6 +332,7 @@ function JoinRoomPage() {
     return (
       <div>
         <h2>게임 시작!</h2>
+        <h3>질문: {question?.content}</h3>
         <h3>참가자 목록</h3>
         <ul>
           {participants.map(p => (
