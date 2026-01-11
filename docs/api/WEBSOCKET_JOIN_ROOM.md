@@ -63,6 +63,48 @@
 }
 ```
 
+#### 3. 4명이 모이면 자동으로 게임 시작 (GAME_START)
+4번째 참가자가 입장하여 총 4명이 되면, 모든 참가자에게 자동으로 게임 시작 메시지가 전송됩니다:
+```json
+{
+  "type": "GAME_START",
+  "roomCode": "764185",
+  "data": {
+    "participants": [
+      {
+        "userId": 1,
+        "nickname": "방장",
+        "level": 5
+      },
+      {
+        "userId": 2,
+        "nickname": "참가자1",
+        "level": 3
+      },
+      {
+        "userId": 3,
+        "nickname": "참가자2",
+        "level": 2
+      },
+      {
+        "userId": 4,
+        "nickname": "참가자3",
+        "level": 7
+      }
+    ],
+    "question": {
+      "quizId": 42,
+      "content": "가장 좋아하는 음식은?"
+    }
+  },
+  "message": "Game is starting! All 4 players are ready."
+}
+```
+
+**중요:** 
+- 이 메시지는 서버에서 자동으로 전송되며, **모든 참가자가 동일한 질문을 받습니다**.
+- 클라이언트는 이 메시지를 받으면 즉시 게임 화면으로 전환하고, **별도로 질문 조회 API를 호출할 필요 없이** `data.question`을 사용하면 됩니다.
+
 ### 필드 설명
 - `type` (string): 응답 타입
 - `roomCode` (string): 방 코드
@@ -113,8 +155,9 @@
 3. 중복 참가 확인 (같은 방에 이미 참가 중인지)
 4. 방 인원 제한 확인 (최대 4명)
 5. 참가자로 등록 (일반 참가자, examiner=false)
-6. 참가자 본인에게 전체 참가자 목록 전송
-7. 기존 참가자들에게 새 참가자 정보 브로드캐스트
+6. 참가자 본인에게 전체 참가자 목록 전송 (`ROOM_JOINED`)
+7. 기존 참가자들에게 새 참가자 정보 브로드캐스트 (`USER_JOINED`)
+8. **참가자가 4명이 되면** 모든 참가자에게 게임 시작 메시지 자동 전송 (`GAME_START`)
 
 ## 클라이언트 구현 예시
 
@@ -149,6 +192,13 @@ class GameRoom {
         this.addParticipant(message.data);
         break;
       
+      case 'GAME_START':
+        console.log('게임 시작!');
+        console.log('전체 참가자:', message.data.participants);
+        console.log('질문:', message.data.question.content);
+        this.startGame(message.data);
+        break;
+      
       case 'ERROR':
         console.error('방 참가 실패:', message.message);
         alert(`방 참가 실패: ${message.message}`);
@@ -164,6 +214,10 @@ class GameRoom {
       div.textContent = `${p.nickname} (Lv.${p.level})`;
       container.appendChild(div);
     });
+    
+    // 참가자 수 표시
+    const status = document.getElementById('status');
+    status.textContent = `대기 중... (${participants.length}/4)`;
   }
 
   addParticipant(participant) {
@@ -171,6 +225,26 @@ class GameRoom {
     const div = document.createElement('div');
     div.textContent = `${participant.nickname} (Lv.${participant.level})`;
     container.appendChild(div);
+    
+    // 참가자 수 업데이트
+    const currentCount = container.children.length;
+    const status = document.getElementById('status');
+    status.textContent = `대기 중... (${currentCount}/4)`;
+  }
+
+  startGame(data) {
+    // 대기 화면 숨기기
+    document.getElementById('waitingScreen').style.display = 'none';
+    
+    // 게임 화면 표시
+    document.getElementById('gameScreen').style.display = 'block';
+    
+    // 질문 표시
+    document.getElementById('question').textContent = data.question.content;
+    
+    // 게임 초기화
+    console.log('게임 시작! 참가자:', data.participants);
+    console.log('질문:', data.question.content);
   }
 }
 
@@ -202,6 +276,8 @@ function JoinRoomPage() {
   const [participants, setParticipants] = useState([]);
   const [error, setError] = useState(null);
   const [isJoined, setIsJoined] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [question, setQuestion] = useState(null);
   const wsRef = useRef(null);
 
   useEffect(() => {
@@ -221,6 +297,12 @@ function JoinRoomPage() {
         
         case 'USER_JOINED':
           setParticipants(prev => [...prev, message.data]);
+          break;
+        
+        case 'GAME_START':
+          setParticipants(message.data.participants);
+          setQuestion(message.data.question);
+          setGameStarted(true);
           break;
         
         case 'ERROR':
@@ -246,6 +328,24 @@ function JoinRoomPage() {
     }));
   };
 
+  if (gameStarted) {
+    return (
+      <div>
+        <h2>게임 시작!</h2>
+        <h3>질문: {question?.content}</h3>
+        <h3>참가자 목록</h3>
+        <ul>
+          {participants.map(p => (
+            <li key={p.userId}>
+              {p.nickname} (Lv.{p.level})
+            </li>
+          ))}
+        </ul>
+        {/* 게임 화면 컴포넌트 */}
+      </div>
+    );
+  }
+
   if (isJoined) {
     return (
       <div>
@@ -258,6 +358,7 @@ function JoinRoomPage() {
             </li>
           ))}
         </ul>
+        <p>다른 참가자를 기다리는 중...</p>
       </div>
     );
   }
@@ -431,8 +532,8 @@ Kakao.Link.sendDefault({
 ## 다음 단계
 
 방 참가 후:
-1. 대기실에서 다른 참가자 대기
-2. 방장(시험관)이 게임 시작
+1. 대기실에서 다른 참가자 대기 (최대 4명)
+2. **4명이 모이면 자동으로 게임 시작** (서버에서 `GAME_START` 메시지 자동 전송)
 3. 게임 진행
 
 ## 관련 API
