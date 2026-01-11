@@ -159,6 +159,22 @@ public class WebSocketHandler extends TextWebSocketHandler {
             log.info("User {} joined room {} (total: {})",
                 user.getNickname(), roomCode, joinRoomResponse.participants().size());
 
+            // 3. 4명이 모이면 자동으로 게임 시작
+            if (joinRoomResponse.participants().size() >= 4) {
+                log.info("Room {} is now full with 4 participants. Starting game automatically...", roomCode);
+
+                var gameStartMessage = WebSocketMessage.withData(
+                    WebSocketMessageType.GAME_START,
+                    roomCode,
+                    joinRoomResponse.participants(),  // 전체 참가자 정보
+                    "Game is starting! All 4 players are ready."
+                );
+
+                // 방의 모든 참가자에게 게임 시작 메시지 브로드캐스트
+                sessionManager.getSessionsByRoom(roomCode)
+                    .forEach(s -> sendMessage(s, gameStartMessage));
+            }
+
         } catch (com.example.urikkiriserver.global.error.exception.UrikkiriException e) {
             sendExceptionMessage(session, e);
         } catch (Exception e) {

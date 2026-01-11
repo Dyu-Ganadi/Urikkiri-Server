@@ -10,6 +10,8 @@ public enum WebSocketMessageType {
     USER_JOINED,
     LEAVE_ROOM,
 
+    GAME_START,
+
     ERROR
 }
 
