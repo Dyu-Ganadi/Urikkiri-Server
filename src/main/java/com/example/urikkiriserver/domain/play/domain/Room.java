@@ -1,6 +1,5 @@
 package com.example.urikkiriserver.domain.play.domain;
 
-import com.example.urikkiriserver.domain.user.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,9 +17,4 @@ public class Room {
 
     @Column(nullable = false, columnDefinition = "VARCHAR(6)")
     private String code;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "manager_id", nullable = false)
-    private User manager;
-
 }

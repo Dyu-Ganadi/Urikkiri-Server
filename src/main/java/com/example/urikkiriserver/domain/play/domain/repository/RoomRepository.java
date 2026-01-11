@@ -9,4 +9,5 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     Optional<Room> findByCode(String code);
 
+    boolean existsByCode(String code);
 }
