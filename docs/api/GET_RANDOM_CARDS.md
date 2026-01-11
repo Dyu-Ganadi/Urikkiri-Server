@@ -208,14 +208,15 @@ export default CardSelection;
 }
 ```
 
-### 404 Not Found
+### 500 Internal Server Error - 카드 부족
 ```json
 {
-  "status": "NOT_FOUND",
-  "message": "Card Not Found",
+  "status": "INTERNAL_SERVER_ERROR",
+  "message": "Not Enough Cards Available",
   "timestamp": "2026-01-11T10:30:00"
 }
 ```
+**발생 원인:** 데이터베이스에 카드가 5개 미만일 때 발생합니다.
 
 ## 주의사항
 
@@ -223,6 +224,7 @@ export default CardSelection;
 2. **출제자 제외**: 출제자는 이 API를 호출하지 않습니다.
 3. **각 유저마다 다름**: 참가자마다 다른 5개의 카드를 받습니다.
 4. **한 번만 호출**: 라운드당 한 번만 호출하면 됩니다.
+5. **카드 수 검증**: 데이터베이스에 카드가 5개 미만이면 에러가 발생합니다.
 
 ## 관련 API
 - [WebSocket 게임 플로우](../websocket/WEBSOCKET_GAME_FLOW.md)
