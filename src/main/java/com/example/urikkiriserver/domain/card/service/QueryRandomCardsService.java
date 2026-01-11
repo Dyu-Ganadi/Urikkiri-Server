@@ -1,6 +1,8 @@
 package com.example.urikkiriserver.domain.card.service;
 
+import com.example.urikkiriserver.domain.card.domain.Card;
 import com.example.urikkiriserver.domain.card.domain.repository.CardRepository;
+import com.example.urikkiriserver.domain.card.exception.InsufficientCardsException;
 import com.example.urikkiriserver.domain.card.presentation.dto.response.CardListResponse;
 import com.example.urikkiriserver.domain.card.presentation.dto.response.CardResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,12 +19,17 @@ public class QueryRandomCardsService {
 
     @Transactional(readOnly = true)
     public CardListResponse execute() {
-        List<CardResponse> cards = cardRepository.findRandomCards(5)
-                .stream()
+        List<Card> cards = cardRepository.findRandomCards(5);
+
+        if (cards.size() < 5) {
+            throw InsufficientCardsException.EXCEPTION;
+        }
+
+        List<CardResponse> cardResponses = cards.stream()
                 .map(CardResponse::from)
                 .toList();
 
-        return CardListResponse.of(cards);
+        return CardListResponse.of(cardResponses);
     }
 }
 

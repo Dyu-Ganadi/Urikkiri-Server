@@ -36,7 +36,8 @@ public enum ErrorCode {
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "Quiz Not Found"),
 
     // card
-    CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "Card Not Found");
+    CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "Card Not Found"),
+    INSUFFICIENT_CARDS(HttpStatus.INTERNAL_SERVER_ERROR, "Not Enough Cards Available");
 
     private final HttpStatus status;
     private final String message;
