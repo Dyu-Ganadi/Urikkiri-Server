@@ -1,11 +1,9 @@
 package com.example.urikkiriserver.global.websocket;
 
-import com.example.urikkiriserver.domain.play.domain.repository.ParticipantRepository;
-import com.example.urikkiriserver.domain.play.domain.repository.RoomRepository;
-import com.example.urikkiriserver.global.websocket.dto.ParticipantInfo;
 import com.example.urikkiriserver.global.websocket.dto.WebSocketMessage;
 import com.example.urikkiriserver.global.websocket.dto.WebSocketMessageType;
 import com.example.urikkiriserver.domain.play.service.CreateRoomService;
+import com.example.urikkiriserver.domain.play.service.JoinRoomService;
 import com.example.urikkiriserver.domain.user.domain.User;
 import com.example.urikkiriserver.global.websocket.exception.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,9 +25,8 @@ import java.io.IOException;
 public class WebSocketHandler extends TextWebSocketHandler {
 
     private final WebSocketSessionManager sessionManager;
-    private final RoomRepository roomRepository;
-    private final ParticipantRepository participantRepository;
     private final CreateRoomService createRoomService;
+    private final JoinRoomService joinRoomService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -126,63 +123,48 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        // 방이 존재하는지 확인
-        var roomOptional = roomRepository.findByCode(roomCode);
-        if (roomOptional.isEmpty()) {
+        try {
+            // JoinRoomService를 통해 방 참가 로직 실행 및 참가자 목록 반환
+            var joinRoomResponse = joinRoomService.execute(roomCode, user);
+
+            // 세션을 방에 추가
+            sessionManager.addSession(roomCode, session);
+
+            // 1. 새로 입장한 사용자에게 전체 참가자 목록 전송
+            sendMessage(session, WebSocketMessage.withData(
+                WebSocketMessageType.ROOM_JOINED,
+                roomCode,
+                joinRoomResponse.participants(),  // 전체 참가자 목록
+                "Successfully joined room"
+            ));
+
+            // 2. 기존 참가자들에게 새 참가자 정보만 브로드캐스트
+            var newParticipant = joinRoomResponse.participants().stream()
+                .filter(p -> p.userId().equals(user.getId()))
+                .findFirst()
+                .orElseThrow();
+
+            var broadcastMessage = WebSocketMessage.withData(
+                WebSocketMessageType.USER_JOINED,
+                roomCode,
+                newParticipant,  // 새 참가자 한 명만
+                user.getNickname() + " joined the room"
+            );
+
+            // 자기 자신을 제외한 기존 참가자들에게만 전송
+            sessionManager.getSessionsByRoom(roomCode).stream()
+                .filter(s -> !s.getId().equals(session.getId()))
+                .forEach(s -> sendMessage(s, broadcastMessage));
+
+            log.info("User {} joined room {} (total: {})",
+                user.getNickname(), roomCode, joinRoomResponse.participants().size());
+
+        } catch (com.example.urikkiriserver.global.error.exception.UrikkiriException e) {
+            sendExceptionMessage(session, e);
+        } catch (Exception e) {
+            log.error("Unexpected error while joining room", e);
             sendExceptionMessage(session, WebSocketRoomNotFound.EXCEPTION);
-            return;
         }
-
-        var room = roomOptional.get();
-
-        // 해당 사용자가 Participant로 등록되어 있는지 확인
-        boolean isParticipant = participantRepository.existsByRoomIdIdAndUserIdId(
-            room.getId(),
-            user.getId()
-        );
-
-        if (!isParticipant) {
-            sendExceptionMessage(session, WebSocketNotParticipant.EXCEPTION);
-            return;
-        }
-
-        // 세션을 방에 추가
-        sessionManager.addSession(roomCode, session);
-
-        // 전체 참가자 목록 조회
-        var participants = participantRepository.findAllByRoomIdId(room.getId())
-            .stream()
-            .map(ParticipantInfo::from)
-            .toList();
-
-        // 1. 새로 입장한 사용자에게 전체 참가자 목록 전송
-        sendMessage(session, WebSocketMessage.withData(
-            WebSocketMessageType.ROOM_JOINED,
-            roomCode,
-            participants,  // 전체 참가자 목록
-            "Successfully joined room"
-        ));
-
-        // 2. 기존 참가자들에게 새 참가자 정보만 브로드캐스트
-        var newParticipant = participants.stream()
-            .filter(p -> p.userId().equals(user.getId()))
-            .findFirst()
-            .orElseThrow();
-
-        var broadcastMessage = WebSocketMessage.withData(
-            WebSocketMessageType.USER_JOINED,
-            roomCode,
-            newParticipant,  // 새 참가자 한 명만
-            user.getNickname() + " joined the room"
-        );
-
-        // 자기 자신을 제외한 기존 참가자들에게만 전송
-        sessionManager.getSessionsByRoom(roomCode).stream()
-            .filter(s -> !s.getId().equals(session.getId()))
-            .forEach(s -> sendMessage(s, broadcastMessage));
-
-        log.info("User {} joined room {} (total participants: {})",
-            user.getNickname(), roomCode, participants.size());
     }
 
     private void closeSession(WebSocketSession session, com.example.urikkiriserver.global.error.exception.UrikkiriException exception) {
