@@ -11,6 +11,12 @@ public enum WebSocketMessageType {
     LEAVE_ROOM,
 
     GAME_START,
+    SUBMIT_CARD,
+    CARD_SUBMITTED,
+    ALL_CARDS_SUBMITTED,
+    SELECT_WINNER,
+    ROUND_RESULT,
+    NEXT_ROUND,
 
     ERROR
 }
