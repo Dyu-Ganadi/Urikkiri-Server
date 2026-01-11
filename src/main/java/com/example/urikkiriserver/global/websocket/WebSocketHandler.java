@@ -8,6 +8,7 @@ import com.example.urikkiriserver.domain.play.domain.repository.RoomRepository;
 import com.example.urikkiriserver.domain.play.exception.RoomNotFoundException;
 import com.example.urikkiriserver.domain.play.exception.ParticipantNotFoundException;
 import com.example.urikkiriserver.domain.play.exception.ExaminerNotFoundException;
+import com.example.urikkiriserver.domain.play.exception.ExaminerCannotSubmitCardException;
 import com.example.urikkiriserver.domain.play.service.CreateRoomService;
 import com.example.urikkiriserver.domain.play.service.JoinRoomService;
 import com.example.urikkiriserver.domain.quiz.service.QueryRandomQuizService;
@@ -237,6 +238,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             var participant = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), user.getId())
                 .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
+
+            // 출제자는 카드를 제출할 수 없음
+            if (participant.isExaminer()) {
+                throw ExaminerCannotSubmitCardException.EXCEPTION;
+            }
 
             // 제출된 카드 정보 생성
             var submittedCardInfo = SubmittedCardInfo.of(participant, card);

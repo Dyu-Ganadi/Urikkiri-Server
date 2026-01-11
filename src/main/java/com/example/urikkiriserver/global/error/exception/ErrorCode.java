@@ -33,6 +33,7 @@ public enum ErrorCode {
     ALREADY_IN_ROOM(HttpStatus.CONFLICT, "User is Already in This Room"),
     PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "Participant Not Found"),
     EXAMINER_NOT_FOUND(HttpStatus.NOT_FOUND, "Examiner Not Found"),
+    EXAMINER_CANNOT_SUBMIT_CARD(HttpStatus.FORBIDDEN, "Examiner Cannot Submit Card"),
 
     // quiz
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "Quiz Not Found"),
