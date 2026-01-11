@@ -374,7 +374,16 @@ const ExaminerView = () => {
 }
 ```
 
-### 2. 카드를 찾을 수 없음
+### 2. 출제자는 카드 제출 불가
+```json
+{
+  "type": "ERROR",
+  "message": "Examiner Cannot Submit Card"
+}
+```
+**발생 원인:** 출제자가 카드를 제출하려고 시도한 경우
+
+### 3. 카드를 찾을 수 없음
 ```json
 {
   "type": "ERROR",
@@ -382,15 +391,15 @@ const ExaminerView = () => {
 }
 ```
 
-### 3. 참가자를 찾을 수 없음
+### 4. 참가자를 찾을 수 없음
 ```json
 {
   "type": "ERROR",
-  "message": "Participant not found"
+  "message": "Participant Not Found"
 }
 ```
 
-### 4. 잘못된 메시지 형식
+### 5. 잘못된 메시지 형식
 ```json
 {
   "type": "ERROR",
@@ -402,7 +411,7 @@ const ExaminerView = () => {
 
 ## 주의사항
 
-1. **출제자는 제출 불가**: 출제자는 카드를 받지 않으므로 제출할 수 없습니다.
+1. **출제자는 제출 불가**: 출제자가 카드 제출을 시도하면 `EXAMINER_CANNOT_SUBMIT_CARD` 에러가 발생합니다.
 2. **중복 제출 방지**: 클라이언트에서 제출 후 카드 선택을 비활성화해야 합니다.
 3. **3명 완료 후 자동 처리**: 서버가 자동으로 감지하여 출제자에게 알림을 보냅니다.
 4. **메모리 저장**: 제출된 카드는 DB가 아닌 메모리에 저장되며, 라운드 종료 시 초기화됩니다.
