@@ -161,7 +161,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 user.getNickname(), roomCode, joinRoomResponse.participants().size());
 
             // 3. 4명이 모이면 자동으로 게임 시작
-            if (joinRoomResponse.participants().size() >= 4) {
+            if (joinRoomResponse.participants().size() == 4) {
                 log.info("Room {} is now full with 4 participants. Starting game automatically...", roomCode);
 
                 // 랜덤 질문 조회 (모든 참가자가 동일한 질문을 받음)
