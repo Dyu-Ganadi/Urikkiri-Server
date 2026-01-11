@@ -28,6 +28,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final CreateRoomService createRoomService;
     private final JoinRoomService joinRoomService;
     private final ObjectMapper objectMapper;
+    private final com.example.urikkiriserver.domain.quiz.service.QueryRandomQuizService queryRandomQuizService;
 
     @Override
     public void afterConnectionEstablished(@Nullable WebSocketSession session) {
@@ -163,10 +164,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
             if (joinRoomResponse.participants().size() >= 4) {
                 log.info("Room {} is now full with 4 participants. Starting game automatically...", roomCode);
 
+                // 랜덤 질문 조회 (모든 참가자가 동일한 질문을 받음)
+                var quiz = queryRandomQuizService.execute();
+
+                // 참가자 정보 + 질문을 포함한 게임 시작 데이터
+                var gameStartData = com.example.urikkiriserver.global.websocket.dto.GameStartData.of(
+                    joinRoomResponse.participants(),
+                    quiz
+                );
+
                 var gameStartMessage = WebSocketMessage.withData(
                     WebSocketMessageType.GAME_START,
                     roomCode,
-                    joinRoomResponse.participants(),  // 전체 참가자 정보
+                    gameStartData,
                     "Game is starting! All 4 players are ready."
                 );
 
