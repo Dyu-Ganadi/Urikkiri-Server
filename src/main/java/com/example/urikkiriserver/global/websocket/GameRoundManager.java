@@ -22,13 +22,13 @@ public class GameRoundManager {
 
     public void startGame(String roomCode) {
         roomRounds.put(roomCode, 1);
-        submittedCards.put(roomCode, new ArrayList<>());
+        submittedCards.put(roomCode, Collections.synchronizedList(new ArrayList<>()));
     }
 
     public void nextRound(String roomCode) {
         roomRounds.put(roomCode, getCurrentRound(roomCode) + 1);
         // 새 라운드 시작 시 제출된 카드 초기화
-        submittedCards.put(roomCode, new ArrayList<>());
+        submittedCards.put(roomCode, Collections.synchronizedList(new ArrayList<>()));
     }
 
     public void endGame(String roomCode) {
@@ -43,12 +43,12 @@ public class GameRoundManager {
 
     // 제출된 카드 목록 조회
     public List<SubmittedCardInfo> getSubmittedCards(String roomCode) {
-        return new ArrayList<>(submittedCards.getOrDefault(roomCode, List.of()));
+        return new ArrayList<>(submittedCards.getOrDefault(roomCode, Collections.emptyList()));
     }
 
     // 제출된 카드 개수 확인
     public int getSubmittedCount(String roomCode) {
-        return submittedCards.getOrDefault(roomCode, List.of()).size();
+        return submittedCards.getOrDefault(roomCode, Collections.emptyList()).size();
     }
 
     // 3명이 모두 제출했는지 확인 (출제자 제외)
