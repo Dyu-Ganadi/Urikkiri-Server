@@ -167,7 +167,6 @@ if (message.type === 'CARD_SUBMITTED') {
   "data": [
     {
       "participantId": 2,
-      "userId": 2,
       "nickname": "참가자1",
       "cardId": 5,
       "word": "다솜",
@@ -175,7 +174,6 @@ if (message.type === 'CARD_SUBMITTED') {
     },
     {
       "participantId": 3,
-      "userId": 3,
       "nickname": "참가자2",
       "cardId": 12,
       "word": "미리내",
@@ -183,7 +181,6 @@ if (message.type === 'CARD_SUBMITTED') {
     },
     {
       "participantId": 4,
-      "userId": 4,
       "nickname": "참가자3",
       "cardId": 8,
       "word": "바람꽃",
@@ -362,7 +359,6 @@ interface Card {
 
 interface SubmittedCard extends Card {
   participantId: number;
-  userId: number;
   nickname: string;
 }
 

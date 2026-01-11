@@ -190,7 +190,6 @@ const handleWebSocketMessage = (event: MessageEvent) => {
   "data": [
     {
       "participantId": 2,
-      "userId": 2,
       "nickname": "참가자1",
       "cardId": 5,
       "word": "다솜",
@@ -198,7 +197,6 @@ const handleWebSocketMessage = (event: MessageEvent) => {
     },
     {
       "participantId": 3,
-      "userId": 3,
       "nickname": "참가자2",
       "cardId": 12,
       "word": "미리내",
@@ -206,7 +204,6 @@ const handleWebSocketMessage = (event: MessageEvent) => {
     },
     {
       "participantId": 4,
-      "userId": 4,
       "nickname": "참가자3",
       "cardId": 8,
       "word": "바람꽃",
@@ -221,8 +218,7 @@ const handleWebSocketMessage = (event: MessageEvent) => {
 - `type` (string): `"ALL_CARDS_SUBMITTED"`
 - `roomCode` (string): 방 코드
 - `data` (array): 제출된 카드 목록 (3개)
-  - `participantId` (number): 참가자 ID
-  - `userId` (number): 사용자 ID
+  - `participantId` (number): 참가자 ID (우승자 선택 시 사용)
   - `nickname` (string): 사용자 닉네임
   - `cardId` (number): 제출된 카드 ID
   - `word` (string): 카드 단어
@@ -277,7 +273,6 @@ function selectWinner(participantId) {
 ```typescript
 interface SubmittedCard {
   participantId: number;
-  userId: number;
   nickname: string;
   cardId: number;
   word: string;
