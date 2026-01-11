@@ -25,7 +25,12 @@ public enum ErrorCode {
     WEBSOCKET_ROOM_CODE_REQUIRED(HttpStatus.BAD_REQUEST, "Room Code is Required"),
     WEBSOCKET_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "Room Not Found"),
     WEBSOCKET_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "You are not a participant of this room"),
-    WEBSOCKET_ROOM_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Create Room");
+    WEBSOCKET_ROOM_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Create Room"),
+
+    // play - room
+    ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "Room Not Found"),
+    ROOM_ALREADY_FULL(HttpStatus.BAD_REQUEST, "Room is Already Full"),
+    ALREADY_IN_ROOM(HttpStatus.CONFLICT, "User is Already in This Room");
 
     private final HttpStatus status;
     private final String message;
