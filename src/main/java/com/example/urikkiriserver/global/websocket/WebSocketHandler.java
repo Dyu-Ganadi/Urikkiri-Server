@@ -6,6 +6,8 @@ import com.example.urikkiriserver.domain.play.domain.Participant;
 import com.example.urikkiriserver.domain.play.domain.repository.ParticipantRepository;
 import com.example.urikkiriserver.domain.play.domain.repository.RoomRepository;
 import com.example.urikkiriserver.domain.play.exception.RoomNotFoundException;
+import com.example.urikkiriserver.domain.play.exception.ParticipantNotFoundException;
+import com.example.urikkiriserver.domain.play.exception.ExaminerNotFoundException;
 import com.example.urikkiriserver.domain.play.service.CreateRoomService;
 import com.example.urikkiriserver.domain.play.service.JoinRoomService;
 import com.example.urikkiriserver.domain.quiz.service.QueryRandomQuizService;
@@ -234,7 +236,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
 
             var participant = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), user.getId())
-                .orElseThrow(() -> new RuntimeException("Participant not found"));
+                .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
 
             // 제출된 카드 정보 생성
             var submittedCardInfo = SubmittedCardInfo.of(participant, card);
@@ -264,7 +266,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 var examiner = participants.stream()
                     .filter(Participant::isExaminer)
                     .findFirst()
-                    .orElseThrow();
+                    .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
 
                 // 출제자의 세션 찾기
                 var examinerSession = sessionManager.getSessionsByRoom(roomCode).stream()
