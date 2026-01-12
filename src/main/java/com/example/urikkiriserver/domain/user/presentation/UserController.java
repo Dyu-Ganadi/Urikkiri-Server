@@ -47,4 +47,9 @@ public class UserController {
     public MyPageResponse getMyPage() {
         return queryMyPageService.execute();
     }
+
+    @GetMapping("/who-is-the-king")
+    public UserRankingResponse getUserRanking() {
+        return totalRankingService.getAllUserRanking();
+    }
 }
