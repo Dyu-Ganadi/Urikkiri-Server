@@ -22,7 +22,7 @@ public class TotalRankingService {
                         .map(user -> UserRankingResponseElement.of(
                                 user.getLevel(),
                                 user.getNickname(),
-                                user.getBananaxp().longValue()
+                                user.getBananaxp()
                         ))
                         .toList();
 
