@@ -49,6 +49,10 @@ public class SecurityConfig {
                             "/users/signup",
                             "/users/login"
                     ).permitAll()
+                    .requestMatchers(
+                            HttpMethod.GET,
+                            "/users/who-is-the-king"
+                    ).permitAll()
                     .requestMatchers("/ws/**").permitAll()
                     .anyRequest().authenticated()
                 )
