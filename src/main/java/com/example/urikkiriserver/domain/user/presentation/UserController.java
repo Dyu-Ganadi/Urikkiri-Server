@@ -3,8 +3,8 @@ package com.example.urikkiriserver.domain.user.presentation;
 import com.example.urikkiriserver.domain.user.presentation.dto.request.LoginRequest;
 import com.example.urikkiriserver.domain.user.presentation.dto.request.SignUpRequest;
 import com.example.urikkiriserver.domain.user.presentation.dto.response.MyPageResponse;
-import com.example.urikkiriserver.domain.user.presentation.dto.response.RankingScrollResponse;
 import com.example.urikkiriserver.domain.user.presentation.dto.response.TokenResponse;
+import com.example.urikkiriserver.domain.user.presentation.dto.response.UserRankingResponse;
 import com.example.urikkiriserver.domain.user.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -21,7 +21,7 @@ public class UserController {
     private final LoginService loginService;
     private final LogoutService logoutService;
     private final QueryMyPageService queryMyPageService;
-    private final TotalRankingService rankingService;
+    private final TotalRankingService totalRankingService;
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
@@ -48,16 +48,8 @@ public class UserController {
     }
 
 
-    @GetMapping("/users/ranking")
-    public RankingScrollResponse getRankingScroll(
-            @RequestParam(required = false) Integer lastBananaxp,
-            @RequestParam(required = false) Long lastUserId,
-            @RequestParam(defaultValue = "20") int size
-    ) {
-        return rankingService.getRankingScroll(
-                lastBananaxp,
-                lastUserId,
-                size
-        );
+    @GetMapping("/who-is-the-king")
+    public UserRankingResponse getUserRanking() {
+        return totalRankingService.getAllUserRanking();
     }
 }
