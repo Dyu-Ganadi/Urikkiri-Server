@@ -309,8 +309,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
         try {
             // participantId 추출
             @SuppressWarnings("unchecked")
-            Map<String, Object> data = objectMapper.convertValue(wsMessage.data(), Map.class);
-            Long selectedParticipantId = ((Number) data.get("participantId")).longValue();
+            ExaminerSelectRequest selectData = objectMapper.convertValue(wsMessage.data(), ExaminerSelectRequest.class);
+            Long selectedParticipantId = selectData.participantId();
 
             // Room 조회
             var room = roomRepository.findByCode(roomCode)
