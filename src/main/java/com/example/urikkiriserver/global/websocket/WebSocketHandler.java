@@ -338,7 +338,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             var winnerCard = submittedCards.stream()
                     .filter(card -> card.participantId().equals(selectedParticipantId))
                     .findFirst()
-                    .orElseThrow();
+                    .orElseThrow(() -> new IllegalStateException("Winner's card not found in submitted cards for room: " + roomCode));
 
             log.info("Examiner {} selected participant {} (score: {}) in room {}",
                     user.getNickname(), winner.getUserId().getNickname(), winner.getBananaScore(), roomCode);
