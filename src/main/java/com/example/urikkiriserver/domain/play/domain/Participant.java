@@ -29,4 +29,8 @@ public class Participant {
 
     @Column(nullable = false)
     private boolean isExaminer;
+
+    public void winGame() {
+        this.bananaScore += 1; // TODO: SCORE_PER_WIN 상수로 변경
+    }
 }

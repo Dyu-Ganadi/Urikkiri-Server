@@ -28,4 +28,8 @@ public class User {
 
     @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer bananaxp;
+
+    public void bananaxpUp(int reward) {
+        this.bananaxp += reward;
+    }
 }

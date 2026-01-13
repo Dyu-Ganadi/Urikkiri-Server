@@ -56,4 +56,3 @@ public class GameRoundManager {
         return getSubmittedCount(roomCode) >= 3;
     }
 }
-

@@ -18,6 +18,7 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
 
     int countByRoomIdId(Long roomId);
 
+
     @Query("SELECT p FROM Participant p JOIN FETCH p.userId WHERE p.roomId.id = :roomId")
     List<Participant> findAllByRoomIdIdWithUser(@Param("roomId") Long roomId);
 }
