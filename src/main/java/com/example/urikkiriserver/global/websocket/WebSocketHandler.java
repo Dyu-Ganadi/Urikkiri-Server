@@ -19,6 +19,7 @@ import com.example.urikkiriserver.global.websocket.dto.*;
 import com.example.urikkiriserver.global.websocket.exception.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nullable;
+import jakarta.transaction.Transactional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -162,7 +163,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             var newParticipant = joinRoomResponse.participants().stream()
                     .filter(p -> p.userId().equals(user.getId()))
                     .findFirst()
-                    .orElseThrow();
+                    .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
 
             var broadcastMessage = WebSocketMessage.withData(
                     WebSocketMessageType.USER_JOINED,
@@ -299,7 +300,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void handleExaminerSelect(WebSocketSession session, User user, WebSocketMessage wsMessage) {
+    @Transactional
+    protected void handleExaminerSelect(WebSocketSession session, User user, WebSocketMessage wsMessage) {
         String roomCode = wsMessage.roomCode();
         if (roomCode == null || roomCode.isEmpty()) {
             sendExceptionMessage(session, WebSocketRoomCodeRequired.EXCEPTION);
@@ -309,8 +311,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
         try {
             // participantId 추출
             @SuppressWarnings("unchecked")
-            ExaminerSelectRequest selectData = objectMapper.convertValue(wsMessage.data(), ExaminerSelectRequest.class);
-            Long selectedParticipantId = selectData.participantId();
+            Map<String, Object> data = objectMapper.convertValue(wsMessage.data(), Map.class);
+            if (data == null || data.get("participantId") == null) {
+                sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
+                return;
+            }
+            Long selectedParticipantId = ((Number) data.get("participantId")).longValue();
 
             // Room 조회
             var room = roomRepository.findByCode(roomCode)
@@ -338,7 +344,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             var winnerCard = submittedCards.stream()
                     .filter(card -> card.participantId().equals(selectedParticipantId))
                     .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("Winner's card not found in submitted cards for room: " + roomCode));
+                    .orElseThrow(() -> CardNotFoundException.EXCEPTION);
 
             log.info("Examiner {} selected participant {} (score: {}) in room {}",
                     user.getNickname(), winner.getUserId().getNickname(), winner.getBananaScore(), roomCode);
@@ -362,7 +368,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     .forEach(s -> sendMessage(s, selectionMessage));
 
             // 5점 달성 여부 확인
-            if (winner.getBananaScore() >= 5) { // TODO: WINNING_SCORE 상수로 변경
+            if (winner.getBananaScore() >= 5) {
                 log.info("Game ended in room {}. Winner: {} with 5 points", roomCode, winner.getUserId().getNickname());
                 endGame(roomCode, room.getId());
             } else {
@@ -378,7 +384,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void endGame(String roomCode, Long roomId) {
+    @Transactional
+    protected void endGame(String roomCode, Long roomId) {
         try {
             // 모든 참가자 조회
             var participants = participantRepository.findAllByRoomIdIdWithUser(roomId);
@@ -393,12 +400,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // 순위 정보 생성 및 경험치 지급
             List<PlayerRankInfo> rankings = new ArrayList<>();
-            for (int i = 0; i < sortedParticipants.size(); i++) {
+            int rewardCount = Math.min(sortedParticipants.size(), xpRewards.length);
+            for (int i = 0; i < sortedParticipants.size() && i < xpRewards.length; i++) {
                 var participant = sortedParticipants.get(i);
                 var user = participant.getUserId();
 
-                // 경험치 추가
-                user.bananaxpUp(xpRewards[i]);
+                // 경험치 추가 (배열 범위 초과 방지)
+                int xp = i < xpRewards.length ? xpRewards[i] : 0;
+                user.bananaxpUp(xp);
                 userRepository.save(user);
 
                 // 순위 정보 생성
@@ -409,7 +418,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 ));
 
                 log.info("Rank {}: {} (Score: {}, XP +{})",
-                        i + 1, user.getNickname(), participant.getBananaScore(), xpRewards[i]);
+                        i + 1, user.getNickname(), participant.getBananaScore(), xp);
             }
 
             // 게임 결과 메시지 생성
