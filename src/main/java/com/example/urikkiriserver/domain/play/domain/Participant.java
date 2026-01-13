@@ -33,4 +33,8 @@ public class Participant {
     public void winGame() {
         this.bananaScore += 1; // TODO: SCORE_PER_WIN 상수로 변경
     }
+
+    public void setExaminer(boolean isExaminer) {
+        this.isExaminer = isExaminer;
+    }
 }

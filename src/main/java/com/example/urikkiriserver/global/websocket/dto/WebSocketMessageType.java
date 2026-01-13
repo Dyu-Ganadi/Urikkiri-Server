@@ -15,7 +15,8 @@ public enum WebSocketMessageType {
     CARD_SUBMITTED,
     ALL_CARDS_SUBMITTED,
     EXAMINER_SELECT,      // 출제자가 카드 선택
-    EXAMINER_SELECTED,    // 출제자 선택 완료 (다음 라운드 시작)
+    EXAMINER_SELECTED,    // 출제자 선택 완료
+    NEXT_ROUND,           // 다음 라운드 시작 (새 출제자 + 새 질문)
     ROUND_END,            // 게임 종료 (5점 달성)
 
     ERROR

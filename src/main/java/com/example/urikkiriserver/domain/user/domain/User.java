@@ -29,7 +29,20 @@ public class User {
     @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer bananaxp;
 
-    public void bananaxpUp(int reward) {
+    public void addXp(int reward) {
         this.bananaxp += reward;
+        updateLevel();
+    }
+
+    private void updateLevel() {
+        if (this.bananaxp <= 10) {
+            this.level = 1;
+        } else if (this.bananaxp <= 20) {
+            this.level = 2;
+        } else if (this.bananaxp <= 30) {
+            this.level = 3;
+        } else {
+            this.level = 4;
+        }
     }
 }
