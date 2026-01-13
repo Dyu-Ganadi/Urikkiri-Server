@@ -385,7 +385,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // bananaScore 기준으로 내림차순 정렬
             var sortedParticipants = participants.stream()
-                    .sorted((p1, p2) -> Integer.compare(p2.getBananaScore(), p1.getBananaScore()))
+                    .sorted(Comparator.comparingInt(Participant::getBananaScore).reversed())
                     .toList();
 
             // 순위별 경험치 배열
