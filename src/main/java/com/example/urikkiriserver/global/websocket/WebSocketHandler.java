@@ -332,7 +332,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
 
             // 선택된 참가자 조회
-            var winner = participantRepository.findById(selectedParticipantId)
+            var winner = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), selectedParticipantId)
                     .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
 
             // 승자의 bananaScore 증가
@@ -441,7 +441,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         } catch (Exception e) {
             log.error("Error ending game in room {}", roomCode, e);
-        }
+
+            // 모든 참가자에게 에러 알림
+            var errorMessage = WebSocketMessage.of(
+                    WebSocketMessageType.ERROR,
+                    "게임 종료 중 오류가 발생했습니다."
+            );
+            sessionManager.getSessionsByRoom(roomCode)
+                    .forEach(s -> sendMessage(s, errorMessage));
+    }
     }
 
     private void sendExceptionMessage(WebSocketSession session, UrikkiriException exception) {
