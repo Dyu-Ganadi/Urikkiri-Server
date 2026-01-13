@@ -260,9 +260,9 @@ function displaySubmittedCards(cards) {
 }
 
 function selectWinner(participantId) {
-  // SELECT_WINNER 메시지 전송 (다음 API 참고)
+  // EXAMINER_SELECT 메시지 전송 (다음 API 참고)
   ws.send(JSON.stringify({
-    type: 'SELECT_WINNER',
+    type: 'EXAMINER_SELECT',
     roomCode: roomCode,
     data: { participantId }
   }));
@@ -297,7 +297,7 @@ const ExaminerView = () => {
     setSelectedWinner(participantId);
     
     ws.send(JSON.stringify({
-      type: 'SELECT_WINNER',
+      type: 'EXAMINER_SELECT',
       roomCode: roomCode,
       data: { participantId }
     }));
@@ -357,9 +357,11 @@ const ExaminerView = () => {
    → 서버: 3명 완료 감지!
    → 출제자: ALL_CARDS_SUBMITTED 수신 (제출된 카드 3개 포함)
    ↓
-6. 출제자가 우승 카드 선택 (SELECT_WINNER)
+6. 출제자가 우승 카드 선택 (EXAMINER_SELECT)
    ↓
-7. 라운드 결과 발표 (ROUND_RESULT)
+7. 결과 발표 (EXAMINER_SELECTED)
+   ↓
+8. 다음 턴 또는 게임 종료 (NEXT_ROUND / ROUND_END)
 ```
 
 ---
@@ -468,6 +470,9 @@ roomCode: "764185" → [
 
 ## 관련 API
 - [카드 조회 (REST)](./GET_RANDOM_CARDS.md)
-- [WebSocket 게임 플로우](./WEBSOCKET_GAME_FLOW.md)
+- [출제자 카드 선택](./WEBSOCKET_EXAMINER_SELECT.md)
+- [다음 라운드 시작](./WEBSOCKET_NEXT_ROUND.md)
+- [게임 종료](./WEBSOCKET_ROUND_END.md)
+- [WebSocket 게임 플로우](../websocket/WEBSOCKET_GAME_FLOW.md)
 - [방 참가](./WEBSOCKET_JOIN_ROOM.md)
 
