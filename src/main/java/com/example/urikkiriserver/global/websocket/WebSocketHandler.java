@@ -362,7 +362,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     .forEach(s -> sendMessage(s, selectionMessage));
 
             // 5점 달성 여부 확인
-            if (winner.getBananaScore() >= 5) {
+            if (winner.getBananaScore() >= 5) { // TODO: WINNING_SCORE 상수로 변경
                 log.info("Game ended in room {}. Winner: {} with 5 points", roomCode, winner.getUserId().getNickname());
                 endGame(roomCode, room.getId());
             } else {
