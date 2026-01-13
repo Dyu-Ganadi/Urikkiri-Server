@@ -31,7 +31,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -100,6 +99,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             switch (wsMessage.type()) {
                 case CREATE_ROOM -> handleCreateRoom(session, user);
                 case JOIN_ROOM -> handleJoinRoom(session, user, wsMessage.roomCode());
+                case ROOM_EXIT -> handleRoomExit(session, user, wsMessage.roomCode());
                 case SUBMIT_CARD -> handleSubmitCard(session, user, wsMessage);
                 case EXAMINER_SELECT -> handleExaminerSelect(session, user, wsMessage);
                 default -> {
@@ -475,4 +475,82 @@ public class WebSocketHandler extends TextWebSocketHandler {
             log.error("Error closing WebSocket session", e);
         }
     }
+
+    @Transactional
+    protected void handleRoomExit(WebSocketSession session, User user, String roomCode) {
+        if (roomCode == null || roomCode.isEmpty()) {
+            sendExceptionMessage(session, WebSocketRoomCodeRequired.EXCEPTION);
+            return;
+        }
+
+        try {
+            // Room 조회
+            var room = roomRepository.findByCode(roomCode)
+                    .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
+
+            // 게임이 시작되었는지 확인
+            if (gameRoundManager.isGameStarted(roomCode)) {
+                sendMessage(session, WebSocketMessage.of(
+                        WebSocketMessageType.ERROR,
+                        "게임이 시작된 후에는 방을 나갈 수 없습니다."
+                ));
+                return;
+            }
+
+            // Participant 조회
+            var participant = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), user.getId())
+                    .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
+
+            // Participant 삭제
+            participantRepository.delete(participant);
+
+            // 세션 제거
+            sessionManager.removeSession(roomCode, session);
+
+            log.info("User {} exited room {} before game start", user.getNickname(), roomCode);
+
+            // 1. 나간 사용자에게 확인 메시지
+            sendMessage(session, WebSocketMessage.of(
+                    WebSocketMessageType.ROOM_EXIT,
+                    roomCode,
+                    "Successfully exited the room"
+            ));
+
+            // 2. 남은 참가자들에게 알림
+            var remainingParticipants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
+
+            if (!remainingParticipants.isEmpty()) {
+                var exitNotification = UserExitDto.of(
+                        user.getId(),
+                        user.getNickname(),
+                        remainingParticipants.size()
+                );
+
+                var exitMessage = WebSocketMessage.withData(
+                        WebSocketMessageType.ROOM_EXIT,
+                        roomCode,
+                        exitNotification,
+                        user.getNickname() + " has left the room"
+                );
+
+                // 남은 참가자들에게 브로드캐스트
+                sessionManager.getSessionsByRoom(roomCode)
+                        .forEach(s -> sendMessage(s, exitMessage));
+
+                log.info("Room {} now has {} participants remaining", roomCode, remainingParticipants.size());
+            } else {
+                // 방에 아무도 없으면 로그 기록
+                log.info("Room {} is now empty. Consider cleanup.", roomCode);
+//                roomRepository.delete(room);
+//                log.info("Room {} is now empty and has been deleted.", roomCode);
+            }
+
+        } catch (UrikkiriException e) {
+            sendExceptionMessage(session, e);
+        } catch (Exception e) {
+            log.error("Error handling room exit", e);
+            sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
+        }
+    }
+
 }

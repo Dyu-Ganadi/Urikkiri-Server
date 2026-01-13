@@ -8,6 +8,7 @@ public enum WebSocketMessageType {
     JOIN_ROOM,
     ROOM_JOINED,
     USER_JOINED,
+    ROOM_EXIT,
 
     GAME_START,
     SUBMIT_CARD,

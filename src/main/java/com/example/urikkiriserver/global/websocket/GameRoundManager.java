@@ -55,4 +55,8 @@ public class GameRoundManager {
     public boolean isAllCardsSubmitted(String roomCode) {
         return getSubmittedCount(roomCode) >= 3;
     }
+
+    public boolean isGameStarted(String roomCode) {
+        return roomRounds.containsKey(roomCode);
+    }
 }
