@@ -99,7 +99,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             switch (wsMessage.type()) {
                 case CREATE_ROOM -> handleCreateRoom(session, user);
                 case JOIN_ROOM -> handleJoinRoom(session, user, wsMessage.roomCode());
-                case ROOM_EXIT -> handleRoomExit(session, user, wsMessage.roomCode());  // 이 줄 추가
+                case ROOM_EXIT -> handleRoomExit(session, user, wsMessage.roomCode());
                 case SUBMIT_CARD -> handleSubmitCard(session, user, wsMessage);
                 case EXAMINER_SELECT -> handleExaminerSelect(session, user, wsMessage);
                 default -> {
