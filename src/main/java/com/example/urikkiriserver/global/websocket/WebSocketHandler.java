@@ -187,6 +187,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 // 게임 라운드 초기화
                 gameRoundManager.startGame(roomCode);
 
+                // 현재 출제자 찾기 및 히스토리에 추가
+                var room = roomRepository.findByCode(roomCode)
+                        .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
+                var participants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
+                var currentExaminer = participants.stream()
+                        .filter(Participant::isExaminer)
+                        .findFirst()
+                        .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
+                // Participant ID를 히스토리에 추가
+                gameRoundManager.addExaminerHistory(roomCode, currentExaminer.getId());
+
                 // 랜덤 질문 조회 (모든 참가자가 동일한 질문을 받음)
                 var quiz = queryRandomQuizService.execute();
 
@@ -372,8 +383,55 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 log.info("Game ended in room {}. Winner: {} with 5 points", roomCode, winner.getUserId().getNickname());
                 endGame(roomCode, room.getId());
             } else {
-                // 다음 라운드로 진행
-                gameRoundManager.nextRound(roomCode);
+                // 다음 턴으로 진행 - 제출된 카드 초기화
+                gameRoundManager.clearSubmittedCards(roomCode);
+
+                // 출제자 교체 로직
+                var allParticipants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
+                var participantIds = allParticipants.stream()
+                        .map(Participant::getId)
+                        .toList();
+
+                // 다음 출제자 선택 (Participant ID 기준)
+                Long nextExaminerParticipantId = gameRoundManager.selectNextExaminer(roomCode, participantIds);
+                gameRoundManager.addExaminerHistory(roomCode, nextExaminerParticipantId);
+
+                // 현재 출제자를 false로 설정
+                examiner.setExaminer(false);
+
+                // 새 출제자를 true로 설정
+                var nextExaminer = allParticipants.stream()
+                        .filter(p -> p.getId().equals(nextExaminerParticipantId))
+                        .findFirst()
+                        .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
+                nextExaminer.setExaminer(true);
+
+                // DB에 저장
+                participantRepository.save(examiner);
+                participantRepository.save(nextExaminer);
+
+                // 새로운 질문 조회
+                var nextQuiz = queryRandomQuizService.execute();
+
+                log.info("Next turn in room {}. New examiner: {}", roomCode, nextExaminer.getUserId().getNickname());
+
+                // 다음 턴 정보 전송
+                var nextRoundData = NextRoundData.of(
+                        nextExaminer.getUserId().getId(),
+                        nextExaminer.getUserId().getNickname(),
+                        nextQuiz
+                );
+
+                var nextRoundMessage = WebSocketMessage.withData(
+                        WebSocketMessageType.NEXT_ROUND,
+                        roomCode,
+                        nextRoundData,
+                        "Next turn is starting!"
+                );
+
+                // 모든 참가자에게 다음 턴 시작 알림
+                sessionManager.getSessionsByRoom(roomCode)
+                        .forEach(s -> sendMessage(s, nextRoundMessage));
             }
 
         } catch (UrikkiriException e) {
@@ -395,19 +453,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     .sorted(Comparator.comparingInt(Participant::getBananaScore).reversed())
                     .toList();
 
-            // 순위별 경험치 배열
+            // 순위별 경험치 배열 (1위: 20, 2위: 10, 3위: 5, 4위: 2)
             int[] xpRewards = {20, 10, 5, 2};
 
             // 순위 정보 생성 및 경험치 지급
             List<PlayerRankInfo> rankings = new ArrayList<>();
-            int rewardCount = Math.min(sortedParticipants.size(), xpRewards.length);
             for (int i = 0; i < sortedParticipants.size() && i < xpRewards.length; i++) {
                 var participant = sortedParticipants.get(i);
                 var user = participant.getUserId();
 
-                // 경험치 추가 (배열 범위 초과 방지)
-                int xp = i < xpRewards.length ? xpRewards[i] : 0;
-                user.bananaxpUp(xp);
+                // 경험치 추가 및 레벨 자동 계산
+                int xp = xpRewards[i];
+                user.addXp(xp);
                 userRepository.save(user);
 
                 // 순위 정보 생성
@@ -417,8 +474,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                         participant.getBananaScore()
                 ));
 
-                log.info("Rank {}: {} (Score: {}, XP +{})",
-                        i + 1, user.getNickname(), participant.getBananaScore(), xp);
+                log.info("Rank {}: {} (Score: {}, XP +{}, Total XP: {}, Level: {})",
+                        i + 1, user.getNickname(), participant.getBananaScore(), xp, user.getBananaxp(), user.getLevel());
             }
 
             // 게임 결과 메시지 생성

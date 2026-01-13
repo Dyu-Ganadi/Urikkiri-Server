@@ -10,30 +10,30 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class GameRoundManager {
 
-    // roomCode -> currentRound
-    private final Map<String, Integer> roomRounds = new ConcurrentHashMap<>();
-
-    // roomCode -> List<SubmittedCardInfo> (현재 라운드에 제출된 카드들)
+    // roomCode -> List<SubmittedCardInfo> (현재 제출된 카드들)
     private final Map<String, List<SubmittedCardInfo>> submittedCards = new ConcurrentHashMap<>();
 
-    public int getCurrentRound(String roomCode) {
-        return roomRounds.getOrDefault(roomCode, 1);
-    }
+    // roomCode -> List<Long> (출제자였던 participantId 히스토리)
+    private final Map<String, List<Long>> examinerHistory = new ConcurrentHashMap<>();
+
+    // roomCode -> 게임 시작 여부
+    private final Map<String, Boolean> gameStarted = new ConcurrentHashMap<>();
 
     public void startGame(String roomCode) {
-        roomRounds.put(roomCode, 1);
+        gameStarted.put(roomCode, true);
         submittedCards.put(roomCode, Collections.synchronizedList(new ArrayList<>()));
+        examinerHistory.put(roomCode, Collections.synchronizedList(new ArrayList<>()));
     }
 
-    public void nextRound(String roomCode) {
-        roomRounds.put(roomCode, getCurrentRound(roomCode) + 1);
-        // 새 라운드 시작 시 제출된 카드 초기화
+    public void clearSubmittedCards(String roomCode) {
+        // 다음 턴 시작 시 제출된 카드 초기화
         submittedCards.put(roomCode, Collections.synchronizedList(new ArrayList<>()));
     }
 
     public void endGame(String roomCode) {
-        roomRounds.remove(roomCode);
+        gameStarted.remove(roomCode);
         submittedCards.remove(roomCode);
+        examinerHistory.remove(roomCode);
     }
 
     // 카드 제출
@@ -57,6 +57,37 @@ public class GameRoundManager {
     }
 
     public boolean isGameStarted(String roomCode) {
-        return roomRounds.containsKey(roomCode);
+        return gameStarted.getOrDefault(roomCode, false);
+    }
+
+    // 출제자 히스토리에 추가
+    public void addExaminerHistory(String roomCode, Long participantId) {
+        examinerHistory.computeIfAbsent(roomCode, k -> Collections.synchronizedList(new ArrayList<>())).add(participantId);
+    }
+
+    // 출제자 히스토리 조회
+    public List<Long> getExaminerHistory(String roomCode) {
+        return new ArrayList<>(examinerHistory.getOrDefault(roomCode, Collections.emptyList()));
+    }
+
+    // 다음 출제자 Participant ID 선택 (출제자가 아니었던 사람 중 랜덤)
+    public Long selectNextExaminer(String roomCode, List<Long> allParticipantIds) {
+        List<Long> history = getExaminerHistory(roomCode);
+
+        // 아직 출제자가 아니었던 참가자 필터링
+        List<Long> availableParticipants = allParticipantIds.stream()
+                .filter(id -> !history.contains(id))
+                .toList();
+
+        // 모두 출제자를 했다면 히스토리 초기화하고 모든 참가자 중에서 선택
+        if (availableParticipants.isEmpty()) {
+            examinerHistory.put(roomCode, Collections.synchronizedList(new ArrayList<>()));
+            availableParticipants = new ArrayList<>(allParticipantIds);
+        }
+
+        // 랜덤으로 선택
+        Random random = new Random();
+        return availableParticipants.get(random.nextInt(availableParticipants.size()));
     }
 }
+
