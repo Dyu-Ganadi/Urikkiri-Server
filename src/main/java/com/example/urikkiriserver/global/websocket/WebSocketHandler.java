@@ -13,11 +13,9 @@ import com.example.urikkiriserver.domain.play.service.CreateRoomService;
 import com.example.urikkiriserver.domain.play.service.JoinRoomService;
 import com.example.urikkiriserver.domain.quiz.service.QueryRandomQuizService;
 import com.example.urikkiriserver.domain.user.domain.User;
+import com.example.urikkiriserver.domain.user.domain.repository.UserRepository;
 import com.example.urikkiriserver.global.error.exception.UrikkiriException;
-import com.example.urikkiriserver.global.websocket.dto.GameStartData;
-import com.example.urikkiriserver.global.websocket.dto.SubmittedCardInfo;
-import com.example.urikkiriserver.global.websocket.dto.WebSocketMessage;
-import com.example.urikkiriserver.global.websocket.dto.WebSocketMessageType;
+import com.example.urikkiriserver.global.websocket.dto.*;
 import com.example.urikkiriserver.global.websocket.exception.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nullable;
@@ -31,7 +29,8 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -47,6 +46,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final CardRepository cardRepository;
     private final RoomRepository roomRepository;
     private final ParticipantRepository participantRepository;
+    private final UserRepository userRepository;
 
     @Override
     public void afterConnectionEstablished(@Nullable WebSocketSession session) {
@@ -55,7 +55,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         User user = (User) session.getAttributes().get("userPrincipal");
         if (user == null) {
             log.warn("User principal not found in session. Closing connection.");
-            closeSession(session, WebSocketAuthenticationRequired.EXCEPTION);
+            closeSession(session);
             return;
         }
 
@@ -64,8 +64,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         // 연결 성공 메시지 전송
         sendMessage(session, WebSocketMessage.of(
-            WebSocketMessageType.CONNECTED,
-            "WebSocket connection established. Send CREATE_ROOM or JOIN_ROOM message."
+                WebSocketMessageType.CONNECTED,
+                "WebSocket connection established. Send CREATE_ROOM or JOIN_ROOM message."
         ));
     }
 
@@ -99,12 +99,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 case CREATE_ROOM -> handleCreateRoom(session, user);
                 case JOIN_ROOM -> handleJoinRoom(session, user, wsMessage.roomCode());
                 case SUBMIT_CARD -> handleSubmitCard(session, user, wsMessage);
+                case EXAMINER_SELECT -> handleExaminerSelect(session, user, wsMessage);
                 default -> {
                     String roomCode = sessionManager.getRoomCodeBySession(session);
                     if (roomCode != null) {
                         log.info("Message received in room {}: {}", roomCode, message.getPayload());
-                        // 방의 다른 참가자들에게 메시지 브로드캐스트
-                        // WebSocketUtils.sendToEachSocket(message, sessionManager.getSessionsByRoom(roomCode).toArray(new WebSocketSession[0]));
                     }
                 }
             }
@@ -126,9 +125,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // 성공 메시지 전송
             sendMessage(session, WebSocketMessage.of(
-                WebSocketMessageType.ROOM_CREATED,
-                roomCode,
-                "Room created successfully"
+                    WebSocketMessageType.ROOM_CREATED,
+                    roomCode,
+                    "Room created successfully"
             ));
 
         } catch (Exception e) {
@@ -152,32 +151,32 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // 1. 새로 입장한 사용자에게 전체 참가자 목록 전송
             sendMessage(session, WebSocketMessage.withData(
-                WebSocketMessageType.ROOM_JOINED,
-                roomCode,
-                joinRoomResponse.participants(),  // 전체 참가자 목록
-                "Successfully joined room"
+                    WebSocketMessageType.ROOM_JOINED,
+                    roomCode,
+                    joinRoomResponse.participants(),  // 전체 참가자 목록
+                    "Successfully joined room"
             ));
 
             // 2. 기존 참가자들에게 새 참가자 정보만 브로드캐스트
             var newParticipant = joinRoomResponse.participants().stream()
-                .filter(p -> p.userId().equals(user.getId()))
-                .findFirst()
-                .orElseThrow();
+                    .filter(p -> p.userId().equals(user.getId()))
+                    .findFirst()
+                    .orElseThrow();
 
             var broadcastMessage = WebSocketMessage.withData(
-                WebSocketMessageType.USER_JOINED,
-                roomCode,
-                newParticipant,  // 새 참가자 한 명만
-                user.getNickname() + " joined the room"
+                    WebSocketMessageType.USER_JOINED,
+                    roomCode,
+                    newParticipant,  // 새 참가자 한 명만
+                    user.getNickname() + " joined the room"
             );
 
             // 자기 자신을 제외한 기존 참가자들에게만 전송
             sessionManager.getSessionsByRoom(roomCode).stream()
-                .filter(s -> !s.getId().equals(session.getId()))
-                .forEach(s -> sendMessage(s, broadcastMessage));
+                    .filter(s -> !s.getId().equals(session.getId()))
+                    .forEach(s -> sendMessage(s, broadcastMessage));
 
             log.info("User {} joined room {} (total: {})",
-                user.getNickname(), roomCode, joinRoomResponse.participants().size());
+                    user.getNickname(), roomCode, joinRoomResponse.participants().size());
 
             // 3. 4명이 모이면 자동으로 게임 시작
             if (joinRoomResponse.participants().size() == 4) {
@@ -191,20 +190,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
                 // 참가자 정보 + 질문을 포함한 게임 시작 데이터
                 var gameStartData = GameStartData.of(
-                    joinRoomResponse.participants(),
-                    quiz
+                        joinRoomResponse.participants(),
+                        quiz
                 );
 
                 var gameStartMessage = WebSocketMessage.withData(
-                    WebSocketMessageType.GAME_START,
-                    roomCode,
-                    gameStartData,
-                    "Game is starting! All 4 players are ready."
+                        WebSocketMessageType.GAME_START,
+                        roomCode,
+                        gameStartData,
+                        "Game is starting! All 4 players are ready."
                 );
 
                 // 방의 모든 참가자에게 게임 시작 메시지 브로드캐스트
                 sessionManager.getSessionsByRoom(roomCode)
-                    .forEach(s -> sendMessage(s, gameStartMessage));
+                        .forEach(s -> sendMessage(s, gameStartMessage));
             }
 
         } catch (UrikkiriException e) {
@@ -230,14 +229,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // 카드 정보 조회
             var card = cardRepository.findById(cardId)
-                .orElseThrow(() -> CardNotFoundException.EXCEPTION);
+                    .orElseThrow(() -> CardNotFoundException.EXCEPTION);
 
             // 참가자 정보 조회
             var room = roomRepository.findByCode(roomCode)
-                .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
+                    .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
 
             var participant = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), user.getId())
-                .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
+                    .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
 
             // 출제자는 카드를 제출할 수 없음
             if (participant.isExaminer()) {
@@ -251,13 +250,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
             gameRoundManager.submitCard(roomCode, submittedCardInfo);
 
             log.info("User {} submitted card {} in room {} (total submitted: {})",
-                user.getNickname(), card.getWord(), roomCode, gameRoundManager.getSubmittedCount(roomCode));
+                    user.getNickname(), card.getWord(), roomCode, gameRoundManager.getSubmittedCount(roomCode));
 
             // 1. 제출한 사용자에게 확인 메시지
             sendMessage(session, WebSocketMessage.of(
-                WebSocketMessageType.CARD_SUBMITTED,
-                roomCode,
-                "Card submitted successfully"
+                    WebSocketMessageType.CARD_SUBMITTED,
+                    roomCode,
+                    "Card submitted successfully"
             ));
 
             // 2. 3명이 모두 제출했는지 확인
@@ -270,24 +269,24 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 // 출제자 찾기
                 var participants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
                 var examiner = participants.stream()
-                    .filter(Participant::isExaminer)
-                    .findFirst()
-                    .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
+                        .filter(Participant::isExaminer)
+                        .findFirst()
+                        .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
 
                 // 출제자의 세션 찾기
                 var examinerSession = sessionManager.getSessionsByRoom(roomCode).stream()
-                    .filter(s -> {
-                        User sessionUser = (User) s.getAttributes().get("userPrincipal");
-                        return sessionUser != null && sessionUser.getId().equals(examiner.getUserId().getId());
-                    })
-                    .findFirst();
+                        .filter(s -> {
+                            User sessionUser = (User) s.getAttributes().get("userPrincipal");
+                            return sessionUser != null && sessionUser.getId().equals(examiner.getUserId().getId());
+                        })
+                        .findFirst();
 
                 // 출제자에게만 제출된 카드 목록 전송
                 examinerSession.ifPresent(s -> sendMessage(s, WebSocketMessage.withData(
-                    WebSocketMessageType.ALL_CARDS_SUBMITTED,
-                    roomCode,
-                    allSubmittedCards,
-                    "All cards have been submitted"
+                        WebSocketMessageType.ALL_CARDS_SUBMITTED,
+                        roomCode,
+                        allSubmittedCards,
+                        "All cards have been submitted"
                 )));
             }
 
@@ -299,19 +298,146 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void closeSession(WebSocketSession session, UrikkiriException exception) {
+    private void handleExaminerSelect(WebSocketSession session, User user, WebSocketMessage wsMessage) {
+        String roomCode = wsMessage.roomCode();
+        if (roomCode == null || roomCode.isEmpty()) {
+            sendExceptionMessage(session, WebSocketRoomCodeRequired.EXCEPTION);
+            return;
+        }
+
         try {
-            sendExceptionMessage(session, exception);
-            session.close(CloseStatus.POLICY_VIOLATION);
-        } catch (IOException e) {
-            log.error("Error closing WebSocket session", e);
+            // participantId 추출
+            @SuppressWarnings("unchecked")
+            Map<String, Object> data = objectMapper.convertValue(wsMessage.data(), Map.class);
+            Long selectedParticipantId = ((Number) data.get("participantId")).longValue();
+
+            // Room 조회
+            var room = roomRepository.findByCode(roomCode)
+                    .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
+
+            // 현재 사용자가 출제자인지 확인
+            var examiner = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), user.getId())
+                    .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
+
+            if (!examiner.isExaminer()) {
+                sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
+                return;
+            }
+
+            // 선택된 참가자 조회
+            var winner = participantRepository.findById(selectedParticipantId)
+                    .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
+
+            // 승자의 bananaScore 증가
+            winner.winGame();
+            participantRepository.save(winner);
+
+            // 제출된 카드에서 승자의 카드 정보 찾기
+            var submittedCards = gameRoundManager.getSubmittedCards(roomCode);
+            var winnerCard = submittedCards.stream()
+                    .filter(card -> card.participantId().equals(selectedParticipantId))
+                    .findFirst()
+                    .orElseThrow();
+
+            log.info("Examiner {} selected participant {} (score: {}) in room {}",
+                    user.getNickname(), winner.getUserId().getNickname(), winner.getBananaScore(), roomCode);
+
+            // 모든 참가자에게 출제자의 선택 알림
+            var selectionDto = ExaminerSelectionDto.of(
+                    selectedParticipantId,
+                    winnerCard.word(),
+                    winner.getUserId().getNickname(),
+                    winner.getBananaScore()
+            );
+
+            var selectionMessage = WebSocketMessage.withData(
+                    WebSocketMessageType.EXAMINER_SELECTED,
+                    roomCode,
+                    selectionDto,
+                    "Examiner has selected a card"
+            );
+
+            sessionManager.getSessionsByRoom(roomCode)
+                    .forEach(s -> sendMessage(s, selectionMessage));
+
+            // 5점 달성 여부 확인
+            if (winner.getBananaScore() >= 5) {
+                log.info("Game ended in room {}. Winner: {} with 5 points", roomCode, winner.getUserId().getNickname());
+                endGame(roomCode, room.getId());
+            } else {
+                // 다음 라운드로 진행
+                gameRoundManager.nextRound(roomCode);
+            }
+
+        } catch (UrikkiriException e) {
+            sendExceptionMessage(session, e);
+        } catch (Exception e) {
+            log.error("Error handling examiner selection", e);
+            sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
+        }
+    }
+
+    private void endGame(String roomCode, Long roomId) {
+        try {
+            // 모든 참가자 조회
+            var participants = participantRepository.findAllByRoomIdIdWithUser(roomId);
+
+            // bananaScore 기준으로 내림차순 정렬
+            var sortedParticipants = participants.stream()
+                    .sorted((p1, p2) -> Integer.compare(p2.getBananaScore(), p1.getBananaScore()))
+                    .toList();
+
+            // 순위별 경험치 배열
+            int[] xpRewards = {20, 10, 5, 2};
+
+            // 순위 정보 생성 및 경험치 지급
+            List<PlayerRankInfo> rankings = new ArrayList<>();
+            for (int i = 0; i < sortedParticipants.size(); i++) {
+                var participant = sortedParticipants.get(i);
+                var user = participant.getUserId();
+
+                // 경험치 추가
+                user.bananaxpUp(xpRewards[i]);
+                userRepository.save(user);
+
+                // 순위 정보 생성
+                rankings.add(PlayerRankInfo.of(
+                        i + 1,
+                        user,
+                        participant.getBananaScore()
+                ));
+
+                log.info("Rank {}: {} (Score: {}, XP +{})",
+                        i + 1, user.getNickname(), participant.getBananaScore(), xpRewards[i]);
+            }
+
+            // 게임 결과 메시지 생성
+            var gameResult = GameResultDto.of(rankings);
+            var endMessage = WebSocketMessage.withData(
+                    WebSocketMessageType.ROUND_END,
+                    roomCode,
+                    gameResult,
+                    "Game has ended!"
+            );
+
+            // 모든 참가자에게 게임 종료 메시지 전송
+            sessionManager.getSessionsByRoom(roomCode)
+                    .forEach(s -> sendMessage(s, endMessage));
+
+            // 게임 상태 정리
+            gameRoundManager.endGame(roomCode);
+
+            log.info("Game ended in room {}. Final rankings sent to all participants.", roomCode);
+
+        } catch (Exception e) {
+            log.error("Error ending game in room {}", roomCode, e);
         }
     }
 
     private void sendExceptionMessage(WebSocketSession session, UrikkiriException exception) {
         sendMessage(session, WebSocketMessage.of(
-            WebSocketMessageType.ERROR,
-            exception.getErrorCode().getMessage()
+                WebSocketMessageType.ERROR,
+                exception.getErrorCode().getMessage()
         ));
     }
 
@@ -321,6 +447,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
             session.sendMessage(new TextMessage(json));
         } catch (IOException e) {
             log.error("Error sending WebSocket message", e);
+        }
+    }
+
+    private void closeSession(WebSocketSession session) {
+        try {
+            session.close();
+        } catch (IOException e) {
+            log.error("Error closing WebSocket session", e);
         }
     }
 }

@@ -29,4 +29,8 @@ public class Participant {
 
     @Column(nullable = false)
     private boolean isExaminer;
+
+    public void winGame() {
+        this.bananaScore += 1;
+    }
 }
