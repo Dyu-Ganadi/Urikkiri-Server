@@ -55,6 +55,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         User user = (User) session.getAttributes().get("userPrincipal");
         if (user == null) {
             log.warn("User principal not found in session. Closing connection.");
+            sendExceptionMessage(session, WebSocketAuthenticationRequired.EXCEPTION);
             closeSession(session);
             return;
         }
