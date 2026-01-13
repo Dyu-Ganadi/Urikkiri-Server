@@ -541,6 +541,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
             } else {
                 // 방에 아무도 없으면 로그 기록
                 log.info("Room {} is now empty. Consider cleanup.", roomCode);
+//                roomRepository.delete(room);
+//                log.info("Room {} is now empty and has been deleted.", roomCode);
             }
 
         } catch (UrikkiriException e) {
