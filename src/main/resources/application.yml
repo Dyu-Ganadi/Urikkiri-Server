@@ -28,8 +28,3 @@ spring:
     header: ${HEADER}
     prefix: ${PREFIX}
     accessExp: ${ACCESS_EXP}
-
-  data:
-    redis:
-      port: ${REDIS_PORT}
-      host: ${REDIS_HOST}
