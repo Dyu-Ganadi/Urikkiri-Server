@@ -56,7 +56,7 @@ public class SecurityConfig {
                     .requestMatchers("/ws/**").permitAll()
                     .anyRequest().authenticated()
                 )
-            .addFilterBefore(new JwtFilter(jwtProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new JwtFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(new ExceptionFilter(objectMapper), JwtFilter.class)
             .build();
     }
@@ -76,7 +76,6 @@ public class SecurityConfig {
 
         return source;
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {

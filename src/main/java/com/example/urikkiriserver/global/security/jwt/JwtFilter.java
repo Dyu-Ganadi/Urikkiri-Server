@@ -20,7 +20,6 @@ import static com.example.urikkiriserver.global.error.exception.ErrorCode.EXPIRE
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
-    private final StringRedisTemplate redisTemplate;
 
     @Override
     protected void doFilterInternal(
@@ -32,11 +31,6 @@ public class JwtFilter extends OncePerRequestFilter {
         String parseToken = jwtProvider.resolveToken(request);
 
         if (parseToken != null) {
-            // 블랙리스트 검사
-            if (Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + parseToken))) {
-                throw ExpiredJwt.EXCEPTION;
-            }
-
             Authentication authentication = jwtProvider.authentication(parseToken);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
