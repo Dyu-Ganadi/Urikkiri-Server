@@ -34,6 +34,8 @@ public class SignUpService {
                 .email(request.email())
                 .nickname(request.nickname())
                 .password(passwordEncoder.encode(request.password()))
+                .bananaxp(0)
+                .level(1)
                 .build()
         );
 
