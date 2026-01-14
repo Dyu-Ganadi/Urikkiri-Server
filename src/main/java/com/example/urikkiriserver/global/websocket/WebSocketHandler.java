@@ -53,6 +53,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
         if (session == null) return;
 
         User user = (User) session.getAttributes().get("userPrincipal");
+        ClientType clientType = (ClientType) session.getAttributes().get("clientType");
+
         if (user == null) {
             log.warn("User principal not found in session. Closing connection.");
             sendExceptionMessage(session, WebSocketAuthenticationRequired.EXCEPTION);
@@ -60,13 +62,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        // WebSocket 연결 성공 - roomCode는 나중에 메시지로 받음
-        log.info("User {} connected to WebSocket (waiting for room action)", user.getNickname());
+        if (clientType == null) {
+            clientType = ClientType.LOBBY; // 기본값
+        }
 
-        // 연결 성공 메시지 전송
+        log.info("User {} connected to WebSocket as {} client", user.getNickname(), clientType);
+
+        // 클라이언트 타입별 연결 메시지
+        String connectionMessage = clientType == ClientType.LOBBY
+            ? "WebSocket connection established. Send CREATE_ROOM or JOIN_ROOM message."
+            : "Game WebSocket connection established. Send CONNECT_GAME message with room code.";
+
         sendMessage(session, WebSocketMessage.of(
                 WebSocketMessageType.CONNECTED,
-                "WebSocket connection established. Send CREATE_ROOM or JOIN_ROOM message."
+                connectionMessage
         ));
     }
 
@@ -100,6 +109,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 case CREATE_ROOM -> handleCreateRoom(session, user);
                 case JOIN_ROOM -> handleJoinRoom(session, user, wsMessage.roomCode());
                 case ROOM_EXIT -> handleRoomExit(session, user, wsMessage.roomCode());
+                case CONNECT_GAME -> handleConnectGame(session, user, wsMessage.roomCode());
                 case SUBMIT_CARD -> handleSubmitCard(session, user, wsMessage);
                 case EXAMINER_SELECT -> handleExaminerSelect(session, user, wsMessage);
                 default -> {
@@ -148,14 +158,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // JoinRoomService를 통해 방 참가 로직 실행 및 참가자 목록 반환
             var joinRoomResponse = joinRoomService.execute(roomCode, user);
 
-            // 세션을 방에 추가
+            // 세션을 방에 추가 (로비 세션으로)
             sessionManager.addSession(roomCode, session);
 
             // 1. 새로 입장한 사용자에게 전체 참가자 목록 전송
             sendMessage(session, WebSocketMessage.withData(
                     WebSocketMessageType.ROOM_JOINED,
                     roomCode,
-                    joinRoomResponse.participants(),  // 전체 참가자 목록
+                    joinRoomResponse.participants(),
                     "Successfully joined room"
             ));
 
@@ -168,55 +178,35 @@ public class WebSocketHandler extends TextWebSocketHandler {
             var broadcastMessage = WebSocketMessage.withData(
                     WebSocketMessageType.USER_JOINED,
                     roomCode,
-                    newParticipant,  // 새 참가자 한 명만
+                    newParticipant,
                     user.getNickname() + " joined the room"
             );
 
             // 자기 자신을 제외한 기존 참가자들에게만 전송
-            sessionManager.getSessionsByRoom(roomCode).stream()
+            sessionManager.getLobbySessionsByRoom(roomCode).stream()
                     .filter(s -> !s.getId().equals(session.getId()))
                     .forEach(s -> sendMessage(s, broadcastMessage));
 
             log.info("User {} joined room {} (total: {})",
                     user.getNickname(), roomCode, joinRoomResponse.participants().size());
 
-            // 3. 4명이 모이면 자동으로 게임 시작
+            // 3. 4명이 모이면 게임 준비 완료 알림만 전송 (Unity가 재연결해야 함)
             if (joinRoomResponse.participants().size() == 4) {
-                log.info("Room {} is now full with 4 participants. Starting game automatically...", roomCode);
+                log.info("Room {} is now full. Notifying clients to launch Unity game...", roomCode);
 
-                // 게임 라운드 초기화
-                gameRoundManager.startGame(roomCode);
+                // 게임 준비 완료 데이터
+                var gameReadyData = GameReadyData.of(joinRoomResponse.participants());
 
-                // 현재 출제자 찾기 및 히스토리에 추가
-                var room = roomRepository.findByCode(roomCode)
-                        .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
-                var participants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
-                var currentExaminer = participants.stream()
-                        .filter(Participant::isExaminer)
-                        .findFirst()
-                        .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
-                // Participant ID를 히스토리에 추가
-                gameRoundManager.addExaminerHistory(roomCode, currentExaminer.getId());
-
-                // 랜덤 질문 조회 (모든 참가자가 동일한 질문을 받음)
-                var quiz = queryRandomQuizService.execute();
-
-                // 참가자 정보 + 질문을 포함한 게임 시작 데이터
-                var gameStartData = GameStartData.of(
-                        joinRoomResponse.participants(),
-                        quiz
-                );
-
-                var gameStartMessage = WebSocketMessage.withData(
-                        WebSocketMessageType.GAME_START,
+                var gameReadyMessage = WebSocketMessage.withData(
+                        WebSocketMessageType.GAME_READY,
                         roomCode,
-                        gameStartData,
-                        "Game is starting! All 4 players are ready."
+                        gameReadyData,
+                        "All players ready! Launch Unity game with your token and room code."
                 );
 
-                // 방의 모든 참가자에게 게임 시작 메시지 브로드캐스트
-                sessionManager.getSessionsByRoom(roomCode)
-                        .forEach(s -> sendMessage(s, gameStartMessage));
+                // 방의 모든 로비 클라이언트에게 게임 준비 메시지 브로드캐스트
+                sessionManager.getLobbySessionsByRoom(roomCode)
+                        .forEach(s -> sendMessage(s, gameReadyMessage));
             }
 
         } catch (UrikkiriException e) {
@@ -224,6 +214,98 @@ public class WebSocketHandler extends TextWebSocketHandler {
         } catch (Exception e) {
             log.error("Unexpected error while joining room", e);
             sendExceptionMessage(session, WebSocketRoomNotFound.EXCEPTION);
+        }
+    }
+
+    /**
+     * 클라이언트가 게임 서버로 연결하는 핸들러
+     * GAME_READY 받은 후 클라이언트가 다시 토큰+방코드로 연결
+     */
+    private void handleConnectGame(WebSocketSession session, User user, String roomCode) {
+        if (roomCode == null || roomCode.isEmpty()) {
+            sendExceptionMessage(session, WebSocketRoomCodeRequired.EXCEPTION);
+            return;
+        }
+
+        try {
+            // 방과 참가자 검증
+            var room = roomRepository.findByCode(roomCode)
+                    .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
+
+            var participant = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), user.getId())
+                    .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
+
+            // 게임 세션에 추가
+            sessionManager.addGameSession(roomCode, session);
+
+            log.info("User {} connected to game server for room {} ({}/4)",
+                    user.getNickname(), roomCode, sessionManager.getGameSessionsByRoom(roomCode).size());
+
+            // 게임 세션에 4명이 모두 연결되었는지 확인
+            var gameSessions = sessionManager.getGameSessionsByRoom(roomCode);
+            var participants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
+
+            if (gameSessions.size() == participants.size()) {
+                log.info("All 4 players connected to game server for room {}. Starting game...", roomCode);
+
+                // 모든 플레이어가 게임 서버에 연결되면 게임 시작
+                startGameForConnectedPlayers(roomCode, participants);
+            }
+
+        } catch (UrikkiriException e) {
+            sendExceptionMessage(session, e);
+        } catch (Exception e) {
+            log.error("Error connecting to game server", e);
+            sendExceptionMessage(session, WebSocketRoomNotFound.EXCEPTION);
+        }
+    }
+
+    /**
+     * 모든 플레이어가 게임 서버에 연결된 후 실제 게임을 시작
+     */
+    private void startGameForConnectedPlayers(String roomCode, List<Participant> participants) {
+        try {
+            // 게임 라운드 초기화
+            gameRoundManager.startGame(roomCode);
+
+            // 현재 출제자 찾기 및 히스토리에 추가
+            var currentExaminer = participants.stream()
+                    .filter(Participant::isExaminer)
+                    .findFirst()
+                    .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
+            gameRoundManager.addExaminerHistory(roomCode, currentExaminer.getId());
+
+            // 랜덤 질문 조회
+            var quiz = queryRandomQuizService.execute();
+
+            // 참가자 정보 리스트 생성
+            var participantInfoList = participants.stream()
+                    .map(p -> ParticipantInfo.of(
+                            p.getUserId().getId(),
+                            p.getUserId().getNickname(),
+                            p.getUserId().getLevel(),
+                            p.isExaminer()
+                    ))
+                    .toList();
+
+            // 게임 시작 데이터
+            var gameStartData = GameStartData.of(participantInfoList, quiz);
+
+            var gameStartMessage = WebSocketMessage.withData(
+                    WebSocketMessageType.GAME_START,
+                    roomCode,
+                    gameStartData,
+                    "Game is starting! All 4 players connected."
+            );
+
+            // 게임 세션에 연결된 모든 플레이어에게 게임 시작 메시지 전송
+            sessionManager.getGameSessionsByRoom(roomCode)
+                    .forEach(s -> sendMessage(s, gameStartMessage));
+
+            log.info("Game started for room {} with {} players", roomCode, participants.size());
+
+        } catch (Exception e) {
+            log.error("Error starting game for room {}", roomCode, e);
         }
     }
 
@@ -286,8 +368,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                         .findFirst()
                         .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
 
-                // 출제자의 세션 찾기
-                var examinerSession = sessionManager.getSessionsByRoom(roomCode).stream()
+                // 출제자의 게임 세션 찾기
+                var examinerSession = sessionManager.getGameSessionsByRoom(roomCode).stream()
                         .filter(s -> {
                             User sessionUser = (User) s.getAttributes().get("userPrincipal");
                             return sessionUser != null && sessionUser.getId().equals(examiner.getUserId().getId());
@@ -375,7 +457,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     "Examiner has selected a card"
             );
 
-            sessionManager.getSessionsByRoom(roomCode)
+            sessionManager.getGameSessionsByRoom(roomCode)
                     .forEach(s -> sendMessage(s, selectionMessage));
 
             // 5점 달성 여부 확인
@@ -429,8 +511,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                         "Next turn is starting!"
                 );
 
-                // 모든 참가자에게 다음 턴 시작 알림
-                sessionManager.getSessionsByRoom(roomCode)
+                // 모든 게임 참가자에게 다음 턴 시작 알림
+                sessionManager.getGameSessionsByRoom(roomCode)
                         .forEach(s -> sendMessage(s, nextRoundMessage));
             }
 
@@ -487,8 +569,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     "Game has ended!"
             );
 
-            // 모든 참가자에게 게임 종료 메시지 전송
-            sessionManager.getSessionsByRoom(roomCode)
+            // 모든 게임 참가자에게 게임 종료 메시지 전송
+            sessionManager.getGameSessionsByRoom(roomCode)
                     .forEach(s -> sendMessage(s, endMessage));
 
             // 게임 상태 정리
@@ -499,12 +581,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
         } catch (Exception e) {
             log.error("Error ending game in room {}", roomCode, e);
 
-            // 모든 참가자에게 에러 알림
+            // 모든 게임 참가자에게 에러 알림
             var errorMessage = WebSocketMessage.of(
                     WebSocketMessageType.ERROR,
                     "게임 종료 중 오류가 발생했습니다."
             );
-            sessionManager.getSessionsByRoom(roomCode)
+            sessionManager.getGameSessionsByRoom(roomCode)
                     .forEach(s -> sendMessage(s, errorMessage));
     }
     }
@@ -590,16 +672,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
                         user.getNickname() + " has left the room"
                 );
 
-                // 남은 참가자들에게 브로드캐스트
-                sessionManager.getSessionsByRoom(roomCode)
+                // 남은 로비 참가자들에게만 브로드캐스트
+                sessionManager.getLobbySessionsByRoom(roomCode)
                         .forEach(s -> sendMessage(s, exitMessage));
 
                 log.info("Room {} now has {} participants remaining", roomCode, remainingParticipants.size());
             } else {
-                // 방에 아무도 없으면 로그 기록
                 log.info("Room {} is now empty. Consider cleanup.", roomCode);
-//                roomRepository.delete(room);
-//                log.info("Room {} is now empty and has been deleted.", roomCode);
             }
 
         } catch (UrikkiriException e) {
@@ -611,3 +690,4 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
 }
+

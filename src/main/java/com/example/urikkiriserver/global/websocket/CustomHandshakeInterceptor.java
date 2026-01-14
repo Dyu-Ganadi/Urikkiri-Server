@@ -24,15 +24,23 @@ public class CustomHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response,
                                    @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes) {
         String token = null;
+        ClientType clientType = ClientType.LOBBY; // 기본값은 로비
 
-        // 1. 쿼리 파라미터에서 토큰 추출 (브라우저 환경용)
+        // 1. 쿼리 파라미터에서 토큰과 클라이언트 타입 추출
         String query = request.getURI().getQuery();
-        if (query != null && query.contains("token=")) {
+        if (query != null) {
             String[] params = query.split("&");
             for (String param : params) {
                 if (param.startsWith("token=")) {
-                    token = param.substring(6); // "token=" 이후의 값
-                    break;
+                    token = param.substring(6);
+                } else if (param.startsWith("clientType=")) {
+                    String typeValue = param.substring(11);
+                    try {
+                        clientType = ClientType.valueOf(typeValue.toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        // 잘못된 clientType이면 기본값(LOBBY) 사용
+//                        log.warn("Invalid clientType: {}, using default LOBBY", typeValue);
+                    }
                 }
             }
         }
@@ -60,6 +68,7 @@ public class CustomHandshakeInterceptor implements HandshakeInterceptor {
             // AuthDetails에서 실제 User 객체 추출
             if (authentication.getPrincipal() instanceof AuthDetails authDetails) {
                 attributes.put("userPrincipal", authDetails.getUser());
+                attributes.put("clientType", clientType); // 클라이언트 타입 추가
                 return true;
             }
 

@@ -10,7 +10,9 @@ public enum WebSocketMessageType {
     USER_JOINED,
     ROOM_EXIT,
 
-    GAME_START,
+    GAME_READY,           // 4명 모임 → 게임 서버 연결 안내
+    CONNECT_GAME,         // 클라이언트 → 게임 서버 연결 요청
+    GAME_START,           // 게임 시작 (4명 모두 연결 완료 시, 질문 포함)
     SUBMIT_CARD,
     CARD_SUBMITTED,
     ALL_CARDS_SUBMITTED,

@@ -16,5 +16,9 @@ public record ParticipantInfo(
             participant.isExaminer()
         );
     }
-}
 
+    // User 정보로 ParticipantInfo 생성 (게임 시작용)
+    public static ParticipantInfo of(Long userId, String nickname, int level, boolean isExaminer) {
+        return new ParticipantInfo(userId, nickname, level, isExaminer);
+    }
+}

@@ -12,33 +12,76 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @Component
 public class WebSocketSessionManager {
 
-    // roomCode -> Set<WebSocketSession>
-    private final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
+    // roomCode -> Set<WebSocketSession> (로비 클라이언트용)
+    private final Map<String, Set<WebSocketSession>> lobbyRoomSessions = new ConcurrentHashMap<>();
 
-    // 방에 세션을 추가
-    public void addSession(String roomCode, WebSocketSession session) {
-        roomSessions.computeIfAbsent(roomCode, k -> new CopyOnWriteArraySet<>()).add(session);
+    // roomCode -> Set<WebSocketSession> (게임 클라이언트용)
+    private final Map<String, Set<WebSocketSession>> gameRoomSessions = new ConcurrentHashMap<>();
+
+    // 방에 로비 세션을 추가
+    public void addLobbySession(String roomCode, WebSocketSession session) {
+        lobbyRoomSessions.computeIfAbsent(roomCode, k -> new CopyOnWriteArraySet<>()).add(session);
     }
 
-    // 방에서 세션을 제거
+    // 방에 게임 세션을 추가
+    public void addGameSession(String roomCode, WebSocketSession session) {
+        gameRoomSessions.computeIfAbsent(roomCode, k -> new CopyOnWriteArraySet<>()).add(session);
+    }
+
+    // 방에 세션을 추가 (레거시 호환)
+    public void addSession(String roomCode, WebSocketSession session) {
+        addLobbySession(roomCode, session);
+    }
+
+    // 방에서 세션을 제거 (로비 및 게임 모두 확인)
     public void removeSession(String roomCode, WebSocketSession session) {
-        Set<WebSocketSession> sessions = roomSessions.get(roomCode);
-        if (sessions != null) {
-            sessions.remove(session);
-            if (sessions.isEmpty()) {
-                roomSessions.remove(roomCode);
+        // 로비 세션 제거
+        Set<WebSocketSession> lobbySessions = lobbyRoomSessions.get(roomCode);
+        if (lobbySessions != null) {
+            lobbySessions.remove(session);
+            if (lobbySessions.isEmpty()) {
+                lobbyRoomSessions.remove(roomCode);
+            }
+        }
+
+        // 게임 세션 제거
+        Set<WebSocketSession> gameSessions = gameRoomSessions.get(roomCode);
+        if (gameSessions != null) {
+            gameSessions.remove(session);
+            if (gameSessions.isEmpty()) {
+                gameRoomSessions.remove(roomCode);
             }
         }
     }
 
-    // 특정 방의 모든 세션 가져오기
+    // 특정 방의 모든 로비 세션 가져오기
+    public Set<WebSocketSession> getLobbySessionsByRoom(String roomCode) {
+        return lobbyRoomSessions.getOrDefault(roomCode, Set.of());
+    }
+
+    // 특정 방의 모든 게임 세션 가져오기
+    public Set<WebSocketSession> getGameSessionsByRoom(String roomCode) {
+        return gameRoomSessions.getOrDefault(roomCode, Set.of());
+    }
+
+    // 특정 방의 모든 세션 가져오기 (레거시 호환)
     public Set<WebSocketSession> getSessionsByRoom(String roomCode) {
-        return roomSessions.getOrDefault(roomCode, Set.of());
+        return getLobbySessionsByRoom(roomCode);
     }
 
     // 특정 세션이 속한 방 코드 찾기
     public String getRoomCodeBySession(WebSocketSession session) {
-        return roomSessions.entrySet().stream()
+        // 로비 세션 확인
+        String roomCode = lobbyRoomSessions.entrySet().stream()
+                .filter(entry -> entry.getValue().contains(session))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+
+        if (roomCode != null) return roomCode;
+
+        // 게임 세션 확인
+        return gameRoomSessions.entrySet().stream()
                 .filter(entry -> entry.getValue().contains(session))
                 .map(Map.Entry::getKey)
                 .findFirst()
