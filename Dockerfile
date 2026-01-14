@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 openjdk:17
+FROM openjdk:17-jdk-slim
 WORKDIR /app
 EXPOSE 8080
 COPY build/libs/Urikkiri-Server-0.0.1-SNAPSHOT.jar app.jar
