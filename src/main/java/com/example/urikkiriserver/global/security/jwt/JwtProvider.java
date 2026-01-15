@@ -92,14 +92,8 @@ public class JwtProvider {
     }
 
     public Authentication authentication(String token) {
-        try {
-            String email = getTokenSubject(token);
-            log.debug("JWT authentication for email: {}", email);
-            UserDetails userDetails = authDetailsService.loadUserByUsername(email);
-            return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
-        } catch (Exception e) {
-            log.error("Failed to authenticate user from JWT: {}", e.getMessage());
-            throw e;
-        }
+        String email = getTokenSubject(token);
+        UserDetails userDetails = authDetailsService.loadUserByUsername(email);
+        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 }

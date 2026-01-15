@@ -32,9 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 Authentication authentication = jwtProvider.authentication(parseToken);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
-                // JWT 검증 실패 시 로그를 남기고 인증 없이 진행 (ExceptionFilter에서 처리)
-                log.warn("JWT authentication failed for request: {} - Error: {}",
-                    request.getRequestURI(), e.getMessage());
+                log.warn("JWT authentication failed: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }
