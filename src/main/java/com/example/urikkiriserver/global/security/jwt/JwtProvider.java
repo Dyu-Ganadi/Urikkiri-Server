@@ -8,6 +8,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,6 +18,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.time.LocalDateTime;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtProvider {
 
@@ -72,12 +74,12 @@ public class JwtProvider {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.warn("JWT Token has expired: {}", e.getMessage());
+            throw ExpiredJwt.EXCEPTION;
         } catch (Exception e) {
-            if (e instanceof io.jsonwebtoken.ExpiredJwtException) {
-                throw ExpiredJwt.EXCEPTION;
-            } else {
-                throw InvalidJwt.EXCEPTION;
-            }
+            log.warn("Invalid JWT Token: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+            throw InvalidJwt.EXCEPTION;
         }
     }
 
@@ -90,7 +92,14 @@ public class JwtProvider {
     }
 
     public Authentication authentication(String token) {
-        UserDetails userDetails = authDetailsService.loadUserByUsername(getTokenSubject(token));
-        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+        try {
+            String email = getTokenSubject(token);
+            log.debug("JWT authentication for email: {}", email);
+            UserDetails userDetails = authDetailsService.loadUserByUsername(email);
+            return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+        } catch (Exception e) {
+            log.error("Failed to authenticate user from JWT: {}", e.getMessage());
+            throw e;
+        }
     }
 }

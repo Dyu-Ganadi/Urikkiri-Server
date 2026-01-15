@@ -1,21 +1,18 @@
 package com.example.urikkiriserver.global.security.jwt;
 
-import com.example.urikkiriserver.global.exception.ExpiredJwt;
-import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-import static com.example.urikkiriserver.global.error.exception.ErrorCode.EXPIRED_JWT;
-
+@Slf4j
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
@@ -31,8 +28,15 @@ public class JwtFilter extends OncePerRequestFilter {
         String parseToken = jwtProvider.resolveToken(request);
 
         if (parseToken != null) {
-            Authentication authentication = jwtProvider.authentication(parseToken);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            try {
+                Authentication authentication = jwtProvider.authentication(parseToken);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (Exception e) {
+                // JWT 검증 실패 시 로그를 남기고 인증 없이 진행 (ExceptionFilter에서 처리)
+                log.warn("JWT authentication failed for request: {} - Error: {}",
+                    request.getRequestURI(), e.getMessage());
+                SecurityContextHolder.clearContext();
+            }
         }
 
         filterChain.doFilter(request, response);
