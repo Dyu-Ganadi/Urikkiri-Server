@@ -23,7 +23,7 @@ public class User {
     @Column(nullable = false, columnDefinition = "CHAR(60)")
     private String password;
 
-    @Column(nullable = false, columnDefinition = "INT DEFAULT 1")
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer level;
 
     @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
@@ -35,14 +35,6 @@ public class User {
     }
 
     private void updateLevel() {
-        if (this.bananaxp <= 10) {
-            this.level = 1;
-        } else if (this.bananaxp <= 20) {
-            this.level = 2;
-        } else if (this.bananaxp <= 30) {
-            this.level = 3;
-        } else {
-            this.level = 4;
-        }
+        this.bananaxp = this.bananaxp / 10;
     }
 }
