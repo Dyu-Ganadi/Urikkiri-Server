@@ -109,6 +109,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 case CREATE_ROOM -> handleCreateRoom(session, user);
                 case JOIN_ROOM -> handleJoinRoom(session, user, wsMessage.roomCode());
                 case ROOM_EXIT -> handleRoomExit(session, user, wsMessage.roomCode());
+                case LEAVE_ROOM -> handleLeaveRoom(session, user, wsMessage.roomCode());
                 case CONNECT_GAME -> handleConnectGame(session, user, wsMessage.roomCode());
                 case SUBMIT_CARD -> handleSubmitCard(session, user, wsMessage);
                 case EXAMINER_SELECT -> handleExaminerSelect(session, user, wsMessage);
@@ -685,6 +686,82 @@ public class WebSocketHandler extends TextWebSocketHandler {
             sendExceptionMessage(session, e);
         } catch (Exception e) {
             log.error("Error handling room exit", e);
+            sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
+        }
+    }
+
+    /**
+     * 게임 종료 후 방 나가기 처리
+     * 개별 유저만 삭제하고 방은 유지 (남은 사람들은 계속 게임 가능)
+     */
+    @Transactional
+    protected void handleLeaveRoom(WebSocketSession session, User user, String roomCode) {
+        if (roomCode == null || roomCode.isEmpty()) {
+            sendExceptionMessage(session, WebSocketRoomCodeRequired.EXCEPTION);
+            return;
+        }
+
+        try {
+            // Room 조회
+            var room = roomRepository.findByCode(roomCode)
+                    .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
+
+            // Participant 조회
+            var participant = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), user.getId())
+                    .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
+
+            // Participant 삭제 (개별 유저만)
+            participantRepository.delete(participant);
+
+            // 세션 제거
+            sessionManager.removeSession(roomCode, session);
+
+            log.info("User {} left room {} after game ended", user.getNickname(), roomCode);
+
+            // 1. 나간 사용자에게 확인 메시지
+            sendMessage(session, WebSocketMessage.of(
+                    WebSocketMessageType.LEAVE_ROOM,
+                    roomCode,
+                    "Successfully left the room"
+            ));
+
+            // 2. 남은 참가자 확인
+            var remainingParticipants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
+
+            if (!remainingParticipants.isEmpty()) {
+                // 남은 참가자들에게 알림
+                var exitNotification = UserExitDto.of(
+                        user.getId(),
+                        user.getNickname(),
+                        remainingParticipants.size()
+                );
+
+                var exitMessage = WebSocketMessage.withData(
+                        WebSocketMessageType.LEAVE_ROOM,
+                        roomCode,
+                        exitNotification,
+                        user.getNickname() + " has left the room"
+                );
+
+                // 남은 게임 세션에 브로드캐스트
+                sessionManager.getGameSessionsByRoom(roomCode)
+                        .forEach(s -> sendMessage(s, exitMessage));
+
+                log.info("Room {} now has {} participants remaining (can continue playing)", roomCode, remainingParticipants.size());
+            } else {
+                // 모든 참가자가 나갔으면 게임 상태만 정리 (방은 유지)
+                log.info("All participants left room {}, but room remains for new players", roomCode);
+
+                // 게임 상태 정리 (메모리 정리)
+                gameRoundManager.endGame(roomCode);
+
+                // Room은 삭제하지 않음 - 새로운 참가자들이 다시 사용 가능
+            }
+
+        } catch (UrikkiriException e) {
+            sendExceptionMessage(session, e);
+        } catch (Exception e) {
+            log.error("Error handling leave room", e);
             sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
         }
     }
