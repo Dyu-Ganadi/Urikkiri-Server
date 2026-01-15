@@ -35,7 +35,7 @@ public class SignUpService {
                 .nickname(request.nickname())
                 .password(passwordEncoder.encode(request.password()))
                 .bananaxp(0)
-                .level(1)
+                .level(0)
                 .build()
         );
 
