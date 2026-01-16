@@ -26,7 +26,8 @@
     {
       "userId": 1,
       "nickname": "방장",
-      "level": 5
+      "level": 5,
+      "isExaminer": true
     }
   ],
   "message": "Room created successfully"
@@ -40,6 +41,7 @@
   - `userId` (number): 사용자 ID
   - `nickname` (string): 사용자 닉네임
   - `level` (number): 사용자 레벨
+  - `isExaminer` (boolean): 시험관 여부 (방장은 항상 true)
 - `message` (string): 성공 메시지
 
 ### 에러 응답

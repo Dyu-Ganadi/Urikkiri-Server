@@ -87,26 +87,31 @@ ws.send(JSON.stringify(message));
 
 ### 1. 참가자 퇴장
 ```
-1. 클라이언트 → 서버: LEAVE_ROOM 전송
+1. 클라이언트 → 서버: LEAVE_ROOM 전송 (roomCode 포함)
 2. 서버: 
-   - 해당 유저의 Participant만 삭제 (roomId, userId로 특정)
+   - roomCode와 userId로 특정 유저의 Participant만 삭제
    - WebSocket 세션 제거
 3. 서버 → 본인: 방 나가기 확인 메시지
 4. 서버 → 남은 참가자: 퇴장 알림 브로드캐스트
 ```
+
+**중요:** roomCode와 participantId(userId)를 사용하여 특정 유저만 삭제하므로, 같은 방의 다른 참가자들은 영향을 받지 않습니다.
 
 ### 2. 모든 참가자 퇴장 시
 ```
 1. 마지막 참가자가 LEAVE_ROOM 전송
 2. 서버: 남은 참가자 수 확인 → 0명
 3. 서버:
-   - 해당 유저의 Participant 삭제
+   - 해당 유저의 Participant 삭제 (roomCode + userId로 특정)
+   - ParticipantRepository에서 해당 방의 모든 유저 정보 삭제됨
    - GameRoundManager에서 게임 상태 정리 (메모리)
    - Room은 삭제하지 않음 (재사용 가능)
 4. 서버 → 마지막 참가자: 방 나가기 확인 메시지
 ```
 
-**중요:** 방(Room)은 삭제되지 않으므로, 새로운 참가자들이 같은 방 코드로 다시 참가하여 게임을 이어갈 수 있습니다.
+**중요:** 
+- 모든 참가자가 나가면 ParticipantRepository에서 해당 방의 유저 정보가 모두 삭제됩니다
+- 방(Room)은 삭제되지 않으므로, 새로운 참가자들이 같은 방 코드로 다시 참가하여 게임을 이어갈 수 있습니다
 
 ---
 

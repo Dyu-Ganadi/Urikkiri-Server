@@ -31,17 +31,20 @@
     {
       "userId": 1,
       "nickname": "방장",
-      "level": 5
+      "level": 5,
+      "isExaminer": true
     },
     {
       "userId": 2,
       "nickname": "참가자1",
-      "level": 3
+      "level": 3,
+      "isExaminer": false
     },
     {
       "userId": 3,
       "nickname": "나",
-      "level": 2
+      "level": 2,
+      "isExaminer": false
     }
   ],
   "message": "나 joined the room"
@@ -49,8 +52,10 @@
 ```
 
 **중요:**
+- **기존 유저 정보 + 새로운 유저 정보를 모두 포함한 전체 목록**이 전송됩니다
 - 모든 클라이언트가 동일한 참가자 목록을 받습니다
 - 새로 입장한 유저와 기존 유저 모두 전체 목록으로 UI를 업데이트해야 합니다
+- `isExaminer`: 방장인지 여부 (true = 방장, false = 일반 참가자)
 
 #### 2. 4명이 모이면 자동으로 게임 시작 (GAME_START)
 4번째 참가자가 입장하여 총 4명이 되면, 모든 참가자에게 자동으로 게임 시작 메시지가 전송됩니다:
@@ -63,22 +68,26 @@
       {
         "userId": 1,
         "nickname": "방장",
-        "level": 5
+        "level": 5,
+        "isExaminer": true
       },
       {
         "userId": 2,
         "nickname": "참가자1",
-        "level": 3
+        "level": 3,
+        "isExaminer": false
       },
       {
         "userId": 3,
         "nickname": "참가자2",
-        "level": 2
+        "level": 2,
+        "isExaminer": false
       },
       {
         "userId": 4,
         "nickname": "참가자3",
-        "level": 7
+        "level": 7,
+        "isExaminer": false
       }
     ],
     "question": {
@@ -97,10 +106,11 @@
 ### 필드 설명
 - `type` (string): 응답 타입
 - `roomCode` (string): 방 코드
-- `data` (array): 현재 방의 전체 참가자 목록
+- `data` (array): 현재 방의 전체 참가자 목록 (기존 유저 + 새 유저)
   - `userId` (number): 사용자 ID
   - `nickname` (string): 사용자 닉네임
   - `level` (number): 사용자 레벨
+  - `isExaminer` (boolean): 시험관 여부 (방장만 true)
 - `message` (string): 상태 메시지
 
 ### 에러 응답
@@ -144,8 +154,9 @@
 3. 중복 참가 확인 (같은 방에 이미 참가 중인지)
 4. 방 인원 제한 확인 (최대 4명)
 5. 참가자로 등록 (일반 참가자, examiner=false)
-6. **방의 모든 참가자(기존 + 새로운 유저)에게 전체 참가자 목록 브로드캐스트** (`USER_JOINED`)
-7. **참가자가 4명이 되면** 모든 참가자에게 게임 시작 메시지 자동 전송 (`GAME_START`)
+6. **방의 전체 참가자 목록 조회 (기존 유저 + 새로운 유저)**
+7. **방의 모든 참가자에게 전체 참가자 목록 브로드캐스트** (`USER_JOINED`)
+8. **참가자가 4명이 되면** 모든 참가자에게 게임 시작 메시지 자동 전송 (`GAME_START`)
 
 ## 클라이언트 구현 예시
 

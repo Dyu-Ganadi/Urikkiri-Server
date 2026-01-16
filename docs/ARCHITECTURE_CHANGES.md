@@ -79,7 +79,10 @@ public enum ClientType {
 - `startGameForConnectedPlayers()`: 모든 플레이어 연결 후 게임 시작
 
 #### 수정된 로직:
+- `handleCreateRoom()`: 방장 정보를 포함한 참가자 목록 반환
+- `handleJoinRoom()`: 기존 유저 + 새 유저 정보를 모두 포함한 전체 참가자 목록 브로드캐스트
 - `handleJoinRoom()`: 4명 모이면 `GAME_READY` 전송 (기존 `GAME_START` 대신)
+- `handleLeaveRoom()`: roomCode와 userId로 특정 유저만 삭제, 모든 유저가 나가면 participantRepository에서 해당 방의 유저 정보 모두 삭제
 - `handleSubmitCard()`: 게임 세션으로만 메시지 전송
 - `handleExaminerSelect()`: 게임 세션으로만 메시지 전송
 - `endGame()`: 게임 세션으로만 메시지 전송
@@ -95,11 +98,10 @@ public enum ClientType {
 2. 서버 → 클라이언트: CONNECTED
 
 3. 클라이언트 → 서버: CREATE_ROOM
-4. 서버 → 클라이언트: ROOM_CREATED (roomCode)
+4. 서버 → 클라이언트: ROOM_CREATED (roomCode, participants[방장])
 
 5. 다른 클라이언트 → 서버: JOIN_ROOM (roomCode)
-6. 서버 → 해당 클라이언트: ROOM_JOINED (participants)
-7. 서버 → 기존 클라이언트들: USER_JOINED (new participant)
+6. 서버 → 모든 클라이언트: USER_JOINED (전체 participants: 기존 유저 + 새 유저)
 
 [4명 모임]
 
