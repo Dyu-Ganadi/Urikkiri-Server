@@ -136,10 +136,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             log.info("User {} created and joined room {}", user.getNickname(), roomCode);
 
-            // 성공 메시지 전송
-            sendMessage(session, WebSocketMessage.of(
+            // 방장 정보를 포함한 참가자 목록 전송
+            sendMessage(session, WebSocketMessage.withData(
                     WebSocketMessageType.ROOM_CREATED,
                     roomCode,
+                    roomResponse.participants(),
                     "Room created successfully"
             ));
 
@@ -162,36 +163,22 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // 세션을 방에 추가 (로비 세션으로)
             sessionManager.addSession(roomCode, session);
 
-            // 1. 새로 입장한 사용자에게 전체 참가자 목록 전송
-            sendMessage(session, WebSocketMessage.withData(
-                    WebSocketMessageType.ROOM_JOINED,
-                    roomCode,
-                    joinRoomResponse.participants(),
-                    "Successfully joined room"
-            ));
-
-            // 2. 기존 참가자들에게 새 참가자 정보만 브로드캐스트
-            var newParticipant = joinRoomResponse.participants().stream()
-                    .filter(p -> p.userId().equals(user.getId()))
-                    .findFirst()
-                    .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
-
-            var broadcastMessage = WebSocketMessage.withData(
+            // 방의 모든 참가자 정보를 담은 메시지 생성
+            var allParticipantsMessage = WebSocketMessage.withData(
                     WebSocketMessageType.USER_JOINED,
                     roomCode,
-                    newParticipant,
+                    joinRoomResponse.participants(),
                     user.getNickname() + " joined the room"
             );
 
-            // 자기 자신을 제외한 기존 참가자들에게만 전송
-            sessionManager.getLobbySessionsByRoom(roomCode).stream()
-                    .filter(s -> !s.getId().equals(session.getId()))
-                    .forEach(s -> sendMessage(s, broadcastMessage));
+            // 방의 모든 로비 클라이언트에게 전체 참가자 목록 브로드캐스트 (새로 들어온 유저 포함)
+            sessionManager.getLobbySessionsByRoom(roomCode)
+                    .forEach(s -> sendMessage(s, allParticipantsMessage));
 
             log.info("User {} joined room {} (total: {})",
                     user.getNickname(), roomCode, joinRoomResponse.participants().size());
 
-            // 3. 4명이 모이면 게임 준비 완료 알림만 전송 (Unity가 재연결해야 함)
+            // 4명이 모이면 게임 준비 완료 알림만 전송 (Unity가 재연결해야 함)
             if (joinRoomResponse.participants().size() == 4) {
                 log.info("Room {} is now full. Notifying clients to launch Unity game...", roomCode);
 
