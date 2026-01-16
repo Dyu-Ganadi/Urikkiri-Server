@@ -680,6 +680,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * 게임 종료 후 방 나가기 처리
      * 개별 유저만 삭제하고 방은 유지 (남은 사람들은 계속 게임 가능)
+     * 모든 유저가 나가면 participantRepository에서 해당 방의 유저 정보를 모두 삭제
      */
     @Transactional
     protected void handleLeaveRoom(WebSocketSession session, User user, String roomCode) {
@@ -697,13 +698,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
             var participant = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), user.getId())
                     .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
 
-            // Participant 삭제 (개별 유저만)
+            // Participant 삭제 (roomCode와 participantId로 특정 유저만 삭제)
             participantRepository.delete(participant);
 
             // 세션 제거
             sessionManager.removeSession(roomCode, session);
 
-            log.info("User {} left room {} after game ended", user.getNickname(), roomCode);
+            log.info("User {} (ID: {}) left room {} after game ended", user.getNickname(), user.getId(), roomCode);
 
             // 1. 나간 사용자에게 확인 메시지
             sendMessage(session, WebSocketMessage.of(
@@ -736,13 +737,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
                 log.info("Room {} now has {} participants remaining (can continue playing)", roomCode, remainingParticipants.size());
             } else {
-                // 모든 참가자가 나갔으면 게임 상태만 정리 (방은 유지)
-                log.info("All participants left room {}, but room remains for new players", roomCode);
+                // 모든 참가자가 나갔으면 participantRepository에서 해당 방의 모든 유저 정보 삭제
+                log.info("All participants left room {}. Cleaning up participant data.", roomCode);
 
                 // 게임 상태 정리 (메모리 정리)
                 gameRoundManager.endGame(roomCode);
 
+                // 해당 방의 모든 Participant 삭제 (이미 위에서 마지막 유저를 삭제했으므로 추가 작업 불필요)
+                // participantRepository.deleteAllByRoomIdId(room.getId()); // 이미 빈 상태
+
                 // Room은 삭제하지 않음 - 새로운 참가자들이 다시 사용 가능
+                log.info("Room {} is now empty and ready for new players", roomCode);
             }
 
         } catch (UrikkiriException e) {

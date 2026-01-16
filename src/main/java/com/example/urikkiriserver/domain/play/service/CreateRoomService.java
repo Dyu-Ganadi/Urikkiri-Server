@@ -6,10 +6,12 @@ import com.example.urikkiriserver.domain.play.domain.repository.ParticipantRepos
 import com.example.urikkiriserver.domain.play.domain.repository.RoomRepository;
 import com.example.urikkiriserver.domain.play.presentation.dto.response.RoomResponse;
 import com.example.urikkiriserver.domain.user.domain.User;
+import com.example.urikkiriserver.global.websocket.dto.ParticipantInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Random;
 
 @Service
@@ -41,7 +43,17 @@ public class CreateRoomService {
             .isExaminer(true)
             .build());
 
-        return RoomResponse.of(roomCode);
+        // 방장 정보를 포함한 참가자 목록 생성
+        List<ParticipantInfo> participants = List.of(
+            ParticipantInfo.of(
+                user.getId(),
+                user.getNickname(),
+                user.getLevel(),
+                true  // 방장이므로 examiner = true
+            )
+        );
+
+        return RoomResponse.of(roomCode, participants);
     }
 
     private String generateRoomCode() {
