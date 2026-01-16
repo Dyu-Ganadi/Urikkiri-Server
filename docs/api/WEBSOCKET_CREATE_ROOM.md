@@ -22,6 +22,13 @@
 {
   "type": "ROOM_CREATED",
   "roomCode": "764185",
+  "data": [
+    {
+      "userId": 1,
+      "nickname": "방장",
+      "level": 5
+    }
+  ],
   "message": "Room created successfully"
 }
 ```
@@ -29,6 +36,10 @@
 ### 필드 설명
 - `type` (string): 응답 타입 `"ROOM_CREATED"`
 - `roomCode` (string): 생성된 방의 6자리 코드
+- `data` (array): 현재 방의 참가자 목록 (방장 정보 포함)
+  - `userId` (number): 사용자 ID
+  - `nickname` (string): 사용자 닉네임
+  - `level` (number): 사용자 레벨
 - `message` (string): 성공 메시지
 
 ### 에러 응답
@@ -70,8 +81,10 @@ class GameRoom {
       case 'ROOM_CREATED':
         console.log('방 생성 성공!');
         console.log('방 코드:', message.roomCode);
-        // UI 업데이트: 방 코드 표시
+        console.log('참가자 목록:', message.data);
+        // UI 업데이트: 방 코드 표시 및 참가자 목록 표시
         this.displayRoomCode(message.roomCode);
+        this.displayParticipants(message.data);
         break;
       
       case 'ERROR':
@@ -85,6 +98,20 @@ class GameRoom {
     // 방 코드를 사용자에게 표시
     document.getElementById('roomCode').textContent = roomCode;
     // 다른 사용자들이 입장할 수 있도록 공유
+  }
+
+  displayParticipants(participants) {
+    const container = document.getElementById('participants');
+    container.innerHTML = '';
+    participants.forEach(p => {
+      const div = document.createElement('div');
+      div.textContent = `${p.nickname} (Lv.${p.level})`;
+      container.appendChild(div);
+    });
+    
+    // 참가자 수 표시
+    const status = document.getElementById('status');
+    status.textContent = `대기 중... (${participants.length}/4)`;
   }
 }
 
@@ -112,6 +139,7 @@ import { useEffect, useRef, useState } from 'react';
 
 function CreateRoomPage() {
   const [roomCode, setRoomCode] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [error, setError] = useState(null);
   const wsRef = useRef(null);
 
@@ -125,6 +153,7 @@ function CreateRoomPage() {
       
       if (message.type === 'ROOM_CREATED') {
         setRoomCode(message.roomCode);
+        setParticipants(message.data);
         setError(null);
       } else if (message.type === 'ERROR') {
         setError(message.message);
@@ -151,6 +180,14 @@ function CreateRoomPage() {
           <button onClick={() => navigator.clipboard.writeText(roomCode)}>
             코드 복사
           </button>
+          <h3>참가자 ({participants.length}/4)</h3>
+          <ul>
+            {participants.map(p => (
+              <li key={p.userId}>
+                {p.nickname} (Lv.{p.level})
+              </li>
+            ))}
+          </ul>
         </div>
       )}
       {error && <div className="error">{error}</div>}

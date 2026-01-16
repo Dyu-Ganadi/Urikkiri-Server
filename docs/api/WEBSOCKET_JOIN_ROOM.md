@@ -21,11 +21,11 @@
 
 ### 성공 응답
 
-#### 1. 참가자 본인에게 전송 (ROOM_JOINED)
-전체 참가자 목록을 포함한 응답:
+#### 1. 모든 참가자에게 브로드캐스트 (USER_JOINED)
+새로운 유저가 방에 입장하면, 해당 방의 **모든 참가자(기존 유저 + 새로운 유저)**에게 전체 참가자 목록을 포함한 메시지를 브로드캐스트합니다:
 ```json
 {
-  "type": "ROOM_JOINED",
+  "type": "USER_JOINED",
   "roomCode": "764185",
   "data": [
     {
@@ -44,26 +44,15 @@
       "level": 2
     }
   ],
-  "message": "Successfully joined room"
-}
-```
-
-#### 2. 기존 참가자들에게 브로드캐스트 (USER_JOINED)
-새로 참가한 유저 정보만 전송:
-```json
-{
-  "type": "USER_JOINED",
-  "roomCode": "764185",
-  "data": {
-    "userId": 3,
-    "nickname": "나",
-    "level": 2
-  },
   "message": "나 joined the room"
 }
 ```
 
-#### 3. 4명이 모이면 자동으로 게임 시작 (GAME_START)
+**중요:**
+- 모든 클라이언트가 동일한 참가자 목록을 받습니다
+- 새로 입장한 유저와 기존 유저 모두 전체 목록으로 UI를 업데이트해야 합니다
+
+#### 2. 4명이 모이면 자동으로 게임 시작 (GAME_START)
 4번째 참가자가 입장하여 총 4명이 되면, 모든 참가자에게 자동으로 게임 시작 메시지가 전송됩니다:
 ```json
 {
@@ -108,7 +97,7 @@
 ### 필드 설명
 - `type` (string): 응답 타입
 - `roomCode` (string): 방 코드
-- `data` (object/array): 참가자 정보
+- `data` (array): 현재 방의 전체 참가자 목록
   - `userId` (number): 사용자 ID
   - `nickname` (string): 사용자 닉네임
   - `level` (number): 사용자 레벨
@@ -155,9 +144,8 @@
 3. 중복 참가 확인 (같은 방에 이미 참가 중인지)
 4. 방 인원 제한 확인 (최대 4명)
 5. 참가자로 등록 (일반 참가자, examiner=false)
-6. 참가자 본인에게 전체 참가자 목록 전송 (`ROOM_JOINED`)
-7. 기존 참가자들에게 새 참가자 정보 브로드캐스트 (`USER_JOINED`)
-8. **참가자가 4명이 되면** 모든 참가자에게 게임 시작 메시지 자동 전송 (`GAME_START`)
+6. **방의 모든 참가자(기존 + 새로운 유저)에게 전체 참가자 목록 브로드캐스트** (`USER_JOINED`)
+7. **참가자가 4명이 되면** 모든 참가자에게 게임 시작 메시지 자동 전송 (`GAME_START`)
 
 ## 클라이언트 구현 예시
 
@@ -180,16 +168,12 @@ class GameRoom {
     const message = JSON.parse(event.data);
     
     switch(message.type) {
-      case 'ROOM_JOINED':
-        console.log('방 참가 성공!');
-        console.log('방 코드:', message.roomCode);
-        console.log('참가자 목록:', message.data);
-        this.displayParticipants(message.data);
-        break;
-      
       case 'USER_JOINED':
-        console.log('새로운 참가자:', message.data);
-        this.addParticipant(message.data);
+        console.log('방 참가 성공 또는 새로운 참가자 입장!');
+        console.log('방 코드:', message.roomCode);
+        console.log('전체 참가자 목록:', message.data);
+        // 전체 참가자 목록으로 UI 업데이트
+        this.displayParticipants(message.data);
         break;
       
       case 'GAME_START':
@@ -220,17 +204,6 @@ class GameRoom {
     status.textContent = `대기 중... (${participants.length}/4)`;
   }
 
-  addParticipant(participant) {
-    const container = document.getElementById('participants');
-    const div = document.createElement('div');
-    div.textContent = `${participant.nickname} (Lv.${participant.level})`;
-    container.appendChild(div);
-    
-    // 참가자 수 업데이트
-    const currentCount = container.children.length;
-    const status = document.getElementById('status');
-    status.textContent = `대기 중... (${currentCount}/4)`;
-  }
 
   startGame(data) {
     // 대기 화면 숨기기
@@ -289,14 +262,11 @@ function JoinRoomPage() {
       const message = JSON.parse(event.data);
       
       switch(message.type) {
-        case 'ROOM_JOINED':
+        case 'USER_JOINED':
+          // 전체 참가자 목록으로 업데이트
           setParticipants(message.data);
           setIsJoined(true);
           setError(null);
-          break;
-        
-        case 'USER_JOINED':
-          setParticipants(prev => [...prev, message.data]);
           break;
         
         case 'GAME_START':
