@@ -94,7 +94,7 @@ API 레퍼런스가 필요한가요?
 ### 🏠 로비 API
 
 - **[방 생성](api/WEBSOCKET_CREATE_ROOM.md)** - CREATE_ROOM, ROOM_CREATED
-- **[방 참여](api/WEBSOCKET_JOIN_ROOM.md)** - JOIN_ROOM, ROOM_JOINED, USER_JOINED
+- **[방 참여](api/WEBSOCKET_JOIN_ROOM.md)** - JOIN_ROOM, USER_JOINED
 
 ### 🎮 게임 API
 

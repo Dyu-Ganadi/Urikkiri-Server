@@ -117,8 +117,7 @@ public enum WebSocketMessageType {
     CREATE_ROOM,         // 방 생성 요청
     ROOM_CREATED,        // 방 생성 완료
     JOIN_ROOM,           // 방 참가 요청
-    ROOM_JOINED,         // 방 참가 완료
-    USER_JOINED,         // 새 사용자 입장 알림
+    USER_JOINED,         // 방 참가 완료 (전체 참가자 목록)
     LEAVE_ROOM,          // 방 나가기
     ERROR                // 에러 발생
 }
@@ -223,7 +222,6 @@ enum WebSocketMessageType {
     CREATE_ROOM = 'CREATE_ROOM',
     ROOM_CREATED = 'ROOM_CREATED',
     JOIN_ROOM = 'JOIN_ROOM',
-    ROOM_JOINED = 'ROOM_JOINED',
     USER_JOINED = 'USER_JOINED',
     ERROR = 'ERROR'
 }

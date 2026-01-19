@@ -22,8 +22,7 @@
 ```
 프론트엔드 → 서버: WebSocket 연결 (토큰)
 프론트엔드 → 서버: CREATE_ROOM or JOIN_ROOM
-프론트엔드 ← 서버: ROOM_CREATED or ROOM_JOINED
-프론트엔드 ← 서버: USER_JOINED (다른 사람 입장 시)
+프론트엔드 ← 서버: ROOM_CREATED or USER_JOINED
 ```
 
 ### 2단계: 4명 모임 → GAME_READY

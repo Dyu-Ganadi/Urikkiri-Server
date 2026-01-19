@@ -372,14 +372,10 @@ class GameClient {
                 console.log('방 생성:', this.currentRoomCode);
                 break;
                 
-            case 'ROOM_JOINED':
+            case 'USER_JOINED':
                 this.currentRoomCode = message.roomCode;
                 console.log('방 참여:', this.currentRoomCode);
                 console.log('참가자 목록:', message.data);
-                break;
-                
-            case 'USER_JOINED':
-                console.log('새 참가자:', message.data);
                 break;
                 
             case 'GAME_READY':
@@ -540,8 +536,7 @@ document.getElementById('joinRoomBtn').onclick = () => {
 - `CREATE_ROOM` - 방 생성 요청
 - `ROOM_CREATED` - 방 생성 완료
 - `JOIN_ROOM` - 방 참여 요청
-- `ROOM_JOINED` - 방 참여 완료
-- `USER_JOINED` - 새 참가자 알림
+- `USER_JOINED` - 방 참여 완료 (전체 참가자 목록)
 - `GAME_READY` - 4명 모임, 게임 서버 연결 안내
 
 ### 게임 단계

@@ -109,12 +109,13 @@ ws.send(JSON.stringify({
 **응답**:
 ```json
 {
-  "type": "ROOM_JOINED",
+  "type": "USER_JOINED",
   "roomCode": "764185",
   "data": [
     { "userId": 1, "nickname": "방장", "level": 5 },
     { "userId": 2, "nickname": "나", "level": 3 }
-  ]
+  ],
+  "message": "나 joined the room"
 }
 ```
 
@@ -321,13 +322,10 @@ class GameClient {
                 this.roomCode = msg.roomCode;
                 console.log(`방 생성: ${this.roomCode}`);
                 break;
-            case 'ROOM_JOINED':
+            case 'USER_JOINED':
                 this.roomCode = msg.roomCode;
                 console.log(`방 참여: ${this.roomCode}`);
                 console.log('참가자:', msg.data);
-                break;
-            case 'USER_JOINED':
-                console.log(`${msg.data.nickname} 입장!`);
                 break;
             case 'GAME_READY':
                 console.log('🎮 게임 준비 완료!');

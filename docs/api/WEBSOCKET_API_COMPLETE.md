@@ -142,20 +142,20 @@ Unity 게임 ─┘
 **필드**:
 - `roomCode` (필수): 참여할 방 코드
 
-**응답**: `ROOM_JOINED`
+**응답**: `USER_JOINED`
 
 ---
 
-### 5. ROOM_JOINED - 방 참여 완료
+### 5. USER_JOINED - 방 참가 완료
 
-**방향**: 서버 → 프론트엔드 (입장한 본인)
+**방향**: 서버 → 프론트엔드 (모든 참가자)
 
-**설명**: 방 참여가 완료되었습니다. 현재 방의 모든 참가자 목록을 받습니다.
+**설명**: 유저가 방에 참가했습니다. 방의 모든 참가자 목록을 전송합니다.
 
 **메시지**:
 ```json
 {
-  "type": "ROOM_JOINED",
+  "type": "USER_JOINED",
   "roomCode": "764185",
   "data": [
     {
@@ -166,12 +166,12 @@ Unity 게임 ─┘
     },
     {
       "userId": 2,
-      "nickname": "나",
+      "nickname": "새로운 유저",
       "level": 3,
       "isExaminer": false
     }
   ],
-  "message": "Successfully joined room"
+  "message": "새로운 유저 joined the room"
 }
 ```
 
@@ -183,32 +183,7 @@ Unity 게임 ─┘
 
 ---
 
-### 6. USER_JOINED - 새 참가자 입장
-
-**방향**: 서버 → 프론트엔드 (기존 참가자들)
-
-**설명**: 새로운 참가자가 방에 입장했습니다.
-
-**메시지**:
-```json
-{
-  "type": "USER_JOINED",
-  "roomCode": "764185",
-  "data": {
-    "userId": 3,
-    "nickname": "친구1",
-    "level": 2,
-    "isExaminer": false
-  },
-  "message": "친구1 joined the room"
-}
-```
-
-**data 필드**: `ParticipantInfo`
-
----
-
-### 7. GAME_READY - 게임 준비 완료 ⭐
+### 6. GAME_READY - 게임 준비 완료 ⭐
 
 **방향**: 서버 → 프론트엔드 (모든 참가자)
 
@@ -271,7 +246,7 @@ if (message.type === 'GAME_READY') {
 
 ---
 
-### 8. ROOM_EXIT - 방 나가기
+### 7. ROOM_EXIT - 방 나가기
 
 **방향**: 프론트엔드 → 서버
 
@@ -664,38 +639,37 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 4. 서버 → 프론트엔드: ROOM_CREATED (roomCode)
 
 5. 프론트엔드2 → 서버: JOIN_ROOM (roomCode)
-6. 서버 → 프론트엔드2: ROOM_JOINED (participants)
-7. 서버 → 프론트엔드1: USER_JOINED (new participant)
+6. 서버 → 모든 프론트엔드: USER_JOINED (모든 participants)
 
 ... (3, 4번째 플레이어도 같은 과정)
 
 [4명 모임]
-8. 서버 → 모든 프론트엔드: GAME_READY
+7. 서버 → 모든 프론트엔드: GAME_READY
 
 [게임 단계 - Unity]
-9. 프론트엔드 → Unity: 토큰 + 방코드 전달
-10. Unity → 서버: 새 WebSocket 연결 (token)
-11. Unity → 서버: CONNECT_GAME (roomCode)
+8. 프론트엔드 → Unity: 토큰 + 방코드 전달
+9. Unity → 서버: 새 WebSocket 연결 (token)
+10. Unity → 서버: CONNECT_GAME (roomCode)
 
 ... (4명의 Unity 모두 연결)
 
 [게임 시작]
-12. 서버 → 모든 Unity: GAME_START (participants + question)
+11. 서버 → 모든 Unity: GAME_START (participants + question)
 
 [라운드 진행]
-13. Unity (3명) → 서버: SUBMIT_CARD
-14. 서버 → Unity (본인): CARD_SUBMITTED
-15. 서버 → Unity (출제자): ALL_CARDS_SUBMITTED
-16. Unity (출제자) → 서버: EXAMINER_SELECT
-17. 서버 → 모든 Unity: EXAMINER_SELECTED
+12. Unity (3명) → 서버: SUBMIT_CARD
+13. 서버 → Unity (본인): CARD_SUBMITTED
+14. 서버 → Unity (출제자): ALL_CARDS_SUBMITTED
+15. Unity (출제자) → 서버: EXAMINER_SELECT
+16. 서버 → 모든 Unity: EXAMINER_SELECTED
 
 [분기]
-- 5점 미만: 서버 → 모든 Unity: NEXT_ROUND (13번으로)
+- 5점 미만: 서버 → 모든 Unity: NEXT_ROUND (12번으로)
 - 5점 달성: 서버 → 모든 Unity: ROUND_END (종료)
 
 [게임 종료]
-18. Unity: WebSocket 연결 종료
-19. 프론트엔드: 로비 화면으로 복귀
+17. Unity: WebSocket 연결 종료
+18. 프론트엔드: 로비 화면으로 복귀
 ```
 
 ### 다이어그램

@@ -258,7 +258,7 @@ var participant = participantRepository.findByRoomIdIdAndUserIdId(
        │                       │                       │
        │--WebSocket(token)-->  │                       │
        │  JOIN_ROOM(123456)    │                       │
-       │<--ROOM_JOINED---------|                       │
+       │<--USER_JOINED---------|                       │
        │                       │                       │
        │  [4명 입장]            │                       │
        │<--GAME_READY----------|                       │

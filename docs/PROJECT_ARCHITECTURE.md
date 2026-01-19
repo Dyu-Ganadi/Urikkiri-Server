@@ -321,14 +321,12 @@ src/main/java/com/example/urikkiriserver/
        ├──────────────────────────────────────────────>│
        │     { type: "CREATE_ROOM" }                   │
        │                                                │
-       │  4. ROOM_CREATED or ROOM_JOINED               │
+       │  4. ROOM_CREATED or USER_JOINED               │
        │<──────────────────────────────────────────────┤
        │     { roomCode, participants }                │
+       │     (USER_JOINED sent to all participants)    │
        │                                                │
-       │  5. USER_JOINED (broadcast to all)            │
-       │<──────────────────────────────────────────────┤
-       │                                                │
-       │  6. GAME_READY (when 4 players joined)        │
+       │  5. GAME_READY (when 4 players joined)        │
        │<══════════════════════════════════════════════┤
        │     { participants[], currentRound }          │
        │                                                │
@@ -817,8 +815,7 @@ Indexes:
 │              Server → Client Messages                           │
 ├─────────────────────────────────────────────────────────────────┤
 │  ROOM_CREATED           방 생성 완료                            │
-│  ROOM_JOINED            방 참가 완료                            │
-│  USER_JOINED            사용자 참가 알림                        │
+│  USER_JOINED            방 참가 완료 (전체 참가자 목록)         │
 │  USER_EXIT              사용자 퇴장 알림                        │
 │  GAME_READY             게임 준비 완료 (4명)                   │
 │  GAME_START             게임 시작                               │
