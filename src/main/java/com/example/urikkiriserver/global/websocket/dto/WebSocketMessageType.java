@@ -6,7 +6,6 @@ public enum WebSocketMessageType {
     CREATE_ROOM,
     ROOM_CREATED,
     JOIN_ROOM,
-    ROOM_JOINED,
     USER_JOINED,
     ROOM_EXIT,
     LEAVE_ROOM,           // 게임 종료 후 방 나가기
