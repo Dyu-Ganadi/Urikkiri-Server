@@ -178,23 +178,36 @@ public class WebSocketHandler extends TextWebSocketHandler {
             log.info("User {} joined room {} (total: {})",
                     user.getNickname(), roomCode, joinRoomResponse.participants().size());
 
-            // 4명이 모이면 게임 준비 완료 알림만 전송 (Unity가 재연결해야 함)
+            // 4명이 모이면 3초 후에 게임 준비 완료 알림 전송 (Unity가 재연결해야 함)
             if (joinRoomResponse.participants().size() == 4) {
-                log.info("Room {} is now full. Notifying clients to launch Unity game...", roomCode);
+                log.info("Room {} is now full. Will notify clients to launch Unity game in 3 seconds...", roomCode);
 
-                // 게임 준비 완료 데이터
-                var gameReadyData = GameReadyData.of(joinRoomResponse.participants());
+                // 3초 지연 후 게임 준비 메시지 전송
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(3000); // 3초 대기
 
-                var gameReadyMessage = WebSocketMessage.withData(
-                        WebSocketMessageType.GAME_READY,
-                        roomCode,
-                        gameReadyData,
-                        "All players ready! Launch Unity game with your token and room code."
-                );
+                        // 게임 준비 완료 데이터
+                        var gameReadyData = GameReadyData.of(joinRoomResponse.participants());
 
-                // 방의 모든 로비 클라이언트에게 게임 준비 메시지 브로드캐스트
-                sessionManager.getLobbySessionsByRoom(roomCode)
-                        .forEach(s -> sendMessage(s, gameReadyMessage));
+                        var gameReadyMessage = WebSocketMessage.withData(
+                                WebSocketMessageType.GAME_READY,
+                                roomCode,
+                                gameReadyData,
+                                "All players ready! Launch Unity game with your token and room code."
+                        );
+
+                        // 방의 모든 로비 클라이언트에게 게임 준비 메시지 브로드캐스트
+                        sessionManager.getLobbySessionsByRoom(roomCode)
+                                .forEach(s -> sendMessage(s, gameReadyMessage));
+
+                        log.info("GAME_READY event sent to room {} after 3 seconds delay", roomCode);
+
+                    } catch (InterruptedException e) {
+                        log.error("Thread interrupted while waiting to send GAME_READY", e);
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
             }
 
         } catch (UrikkiriException e) {
