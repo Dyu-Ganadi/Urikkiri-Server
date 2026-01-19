@@ -18,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -31,6 +32,13 @@ public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
     private final ObjectMapper objectMapper;
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        // WebSocket 경로는 Spring Security에서 완전히 무시
+        return (web) -> web.ignoring()
+                .requestMatchers("/ws/**");
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -52,7 +60,6 @@ public class SecurityConfig {
                             HttpMethod.GET,
                             "/users/who-is-the-king"
                     ).permitAll()
-                    .requestMatchers("/ws/**").permitAll()
                     .anyRequest().authenticated()
                 )
             .exceptionHandling(exception -> exception
