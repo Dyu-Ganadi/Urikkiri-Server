@@ -30,7 +30,10 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.List;
+import java.util.Comparator;
 
 @Slf4j
 @Component
@@ -321,10 +324,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
 
         try {
-            // cardId 추출 (data 필드에서)
+            // data 필드에서 card_id 추출
             @SuppressWarnings("unchecked")
             Map<String, Object> data = objectMapper.convertValue(wsMessage.data(), Map.class);
-            Long cardId = ((Number) data.get("cardId")).longValue();
+
+            if (data == null || !data.containsKey("card_id")) {
+                log.error("Invalid SUBMIT_CARD message. data: {}", wsMessage.data());
+                sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
+                return;
+            }
+
+            Long cardId = ((Number) data.get("card_id")).longValue();
+            log.info("User {} submitting card_id: {} in room {}", user.getNickname(), cardId, roomCode);
 
             // 카드 정보 조회
             var card = cardRepository.findById(cardId)
@@ -455,14 +466,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
 
         try {
-            // participantId 추출
+            // data 필드에서 participant_id 추출
             @SuppressWarnings("unchecked")
             Map<String, Object> data = objectMapper.convertValue(wsMessage.data(), Map.class);
-            if (data == null || data.get("participantId") == null) {
+
+            if (data == null || !data.containsKey("participant_id")) {
+                log.error("Invalid EXAMINER_SELECT message. data: {}", wsMessage.data());
                 sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
                 return;
             }
-            Long selectedParticipantId = ((Number) data.get("participantId")).longValue();
+
+            Long selectedParticipantId = ((Number) data.get("participant_id")).longValue();
+            log.info("Examiner {} selecting participant_id: {}", user.getNickname(), selectedParticipantId);
 
             // Room 조회
             var room = roomRepository.findByCode(roomCode)
@@ -823,9 +838,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 // 게임 상태 정리 (메모리 정리)
                 gameRoundManager.endGame(roomCode);
 
-                // 해당 방의 모든 Participant 삭제 (이미 위에서 마지막 유저를 삭제했으므로 추가 작업 불필요)
-                // participantRepository.deleteAllByRoomIdId(room.getId()); // 이미 빈 상태
-
                 // Room은 삭제하지 않음 - 새로운 참가자들이 다시 사용 가능
                 log.info("Room {} is now empty and ready for new players", roomCode);
             }
@@ -837,6 +849,4 @@ public class WebSocketHandler extends TextWebSocketHandler {
             sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
         }
     }
-
 }
-
