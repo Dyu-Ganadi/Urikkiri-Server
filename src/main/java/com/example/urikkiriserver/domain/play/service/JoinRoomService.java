@@ -46,7 +46,35 @@ public class JoinRoomService {
             throw RoomAlreadyFullException.EXCEPTION;
         }
 
-        // 4. 참가자 추가 (시험관이 아닌 일반 참가자로 추가)
+        // 4. 방에 아무도 없는지 확인
+        if (currentParticipants <= 0) {
+            // 5. 방장으로 참가자 추가
+            participantRepository.save(Participant.builder()
+                    .userId(user)
+                    .roomId(room)
+                    .bananaScore(0)
+                    .isExaminer(true)
+                    .build());
+
+            // 즉시 DB에 반영 (중요: 다른 트랜잭션에서 즉시 조회 가능하도록)
+            participantRepository.flush();
+
+            log.info("Room {} and participant flushed to DB", roomCode);
+
+            // 6. 방장 정보를 포함한 참가자 목록 생성
+            List<ParticipantInfo> participants = List.of(
+                    ParticipantInfo.of(
+                            user.getId(),
+                            user.getNickname(),
+                            user.getLevel(),
+                            true  // 방장이므로 examiner = true
+                    )
+            );
+
+            return JoinRoomResponse.of(room, participants);
+        }
+
+        // 5. 참가자 추가 (시험관이 아닌 일반 참가자로 추가)
         participantRepository.save(Participant.builder()
             .userId(user)
             .roomId(room)
@@ -59,7 +87,7 @@ public class JoinRoomService {
 
         log.info("Participant for user {} in room {} flushed to DB", user.getNickname(), roomCode);
 
-        // 5. 전체 참가자 목록 조회 (User를 Eager Fetch)
+        // 6. 전체 참가자 목록 조회 (User를 Eager Fetch)
         List<ParticipantInfo> participants = participantRepository.findAllByRoomIdIdWithUser(room.getId())
             .stream()
             .map(ParticipantInfo::from)
