@@ -20,4 +20,7 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
 
     @Query("SELECT p FROM Participant p JOIN FETCH p.userId WHERE p.roomId.id = :roomId")
     List<Participant> findAllByRoomIdIdWithUser(@Param("roomId") Long roomId);
+
+    @Query("SELECT p FROM Participant p WHERE p.userId.id = :userId")
+    List<Participant> findAllByUserIdId(@Param("userId") Long userId);
 }

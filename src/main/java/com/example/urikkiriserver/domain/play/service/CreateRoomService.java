@@ -29,9 +29,7 @@ public class CreateRoomService {
 
     private RoomResponse createRoom(User user) {
         // 1. 사용자가 이미 다른 방에 참가 중인 경우 자동으로 제거
-        List<Participant> existingParticipants = participantRepository.findAll().stream()
-                .filter(p -> p.getUserId().getId().equals(user.getId()))
-                .toList();
+        List<Participant> existingParticipants = participantRepository.findAllByUserIdId(user.getId());
 
         if (!existingParticipants.isEmpty()) {
             participantRepository.deleteAll(existingParticipants);
