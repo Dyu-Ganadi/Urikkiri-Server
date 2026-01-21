@@ -24,8 +24,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -141,30 +139,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             log.info("User {} created and joined room {}", user.getNickname(), roomCode);
 
-            // 트랜잭션이 커밋된 후 응답 전송
-            if (TransactionSynchronizationManager.isSynchronizationActive()) {
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        // 방장 정보를 포함한 참가자 목록 전송
-                        sendMessage(session, WebSocketMessage.withData(
-                                WebSocketMessageType.ROOM_CREATED,
-                                roomCode,
-                                roomResponse.participants(),
-                                "Room created successfully"
-                        ));
-                        log.info("ROOM_CREATED message sent after transaction commit for room {}", roomCode);
-                    }
-                });
-            } else {
-                // 트랜잭션이 없는 경우 즉시 전송
-                sendMessage(session, WebSocketMessage.withData(
-                        WebSocketMessageType.ROOM_CREATED,
-                        roomCode,
-                        roomResponse.participants(),
-                        "Room created successfully"
-                ));
-            }
+            // 방장 정보를 포함한 참가자 목록 전송
+            sendMessage(session, WebSocketMessage.withData(
+                    WebSocketMessageType.ROOM_CREATED,
+                    roomCode,
+                    roomResponse.participants(),
+                    "Room created successfully"
+            ));
 
         } catch (Exception e) {
             log.error("Error creating room for user {}", user.getNickname(), e);

@@ -10,11 +10,13 @@ import com.example.urikkiriserver.domain.play.presentation.dto.response.JoinRoom
 import com.example.urikkiriserver.domain.user.domain.User;
 import com.example.urikkiriserver.global.websocket.dto.ParticipantInfo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class JoinRoomService {
@@ -52,6 +54,10 @@ public class JoinRoomService {
             .isExaminer(false)
             .build());
 
+        // 즉시 DB에 반영 (중요: 다른 트랜잭션에서 즉시 조회 가능하도록)
+        participantRepository.flush();
+
+        log.info("Participant for user {} in room {} flushed to DB", user.getNickname(), roomCode);
 
         // 5. 전체 참가자 목록 조회 (User를 Eager Fetch)
         List<ParticipantInfo> participants = participantRepository.findAllByRoomIdIdWithUser(room.getId())

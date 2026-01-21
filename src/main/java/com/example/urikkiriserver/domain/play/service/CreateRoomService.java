@@ -8,12 +8,14 @@ import com.example.urikkiriserver.domain.play.presentation.dto.response.RoomResp
 import com.example.urikkiriserver.domain.user.domain.User;
 import com.example.urikkiriserver.global.websocket.dto.ParticipantInfo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Random;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CreateRoomService {
@@ -52,6 +54,12 @@ public class CreateRoomService {
             .bananaScore(0)
             .isExaminer(true)
             .build());
+
+        // 즉시 DB에 반영 (중요: 다른 트랜잭션에서 즉시 조회 가능하도록)
+        roomRepository.flush();
+        participantRepository.flush();
+
+        log.info("Room {} and participant flushed to DB", roomCode);
 
         // 4. 방장 정보를 포함한 참가자 목록 생성
         List<ParticipantInfo> participants = List.of(
