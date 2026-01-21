@@ -323,7 +323,7 @@ src/main/java/com/example/urikkiriserver/
        │                                                │
        │  4. ROOM_CREATED or USER_JOINED               │
        │<──────────────────────────────────────────────┤
-       │     { roomCode, participants }                │
+       │     { room_code, participants }                │
        │     (USER_JOINED sent to all participants)    │
        │                                                │
        │  5. GAME_READY (when 4 players joined)        │
@@ -473,7 +473,7 @@ src/main/java/com/example/urikkiriserver/
 │  - removeSession(sessionId)                                    │
 │  - associateSessionWithRoom(sessionId, roomCode)               │
 │  - getSessionsByRoom(roomCode)                                 │
-│  - broadcastToRoom(roomCode, message)                          │
+│  - broadcastToRoom(room_code, message)                          │
 │  - sendToSession(sessionId, message)                           │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -496,9 +496,9 @@ src/main/java/com/example/urikkiriserver/
 │  └──────────────────────────────────────────────┘              │
 │                                                                  │
 │  Methods:                                                       │
-│  - initializeRound(roomCode, examinerId, quiz)                 │
-│  - submitCard(roomCode, userId, card)                          │
-│  - selectWinner(roomCode, winnerId)                            │
+│  - initializeRound(room_code, examinerId, quiz)                 │
+│  - submitCard(room_code, userId, card)                          │
+│  - selectWinner(room_code, winnerId)                            │
 │  - nextRound(roomCode)                                         │
 │  - endGame(roomCode)                                           │
 │  - getGameState(roomCode)                                      │
@@ -558,7 +558,7 @@ JWT Token Structure:
 ├──────────────────────────────────────────────────────────────┤
 │ Payload                                                       │
 │ {                                                             │
-│   "sub": "userId",                                           │
+│   "sub": "user_id",                                           │
 │   "email": "user@example.com",                               │
 │   "iat": 1234567890,                                         │
 │   "exp": 1234571490                                          │

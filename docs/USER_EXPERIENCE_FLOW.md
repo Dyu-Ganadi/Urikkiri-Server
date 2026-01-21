@@ -55,13 +55,13 @@
   ```json
   {
     "type": "GAME_START",
-    "roomCode": "123456",
+    "room_code": "123456",
     "data": {
       "participants": [
-        { "userId": 1, "nickname": "나", "isExaminer": false },
-        { "userId": 2, "nickname": "친구1", "isExaminer": true },
-        { "userId": 3, "nickname": "친구2", "isExaminer": false },
-        { "userId": 4, "nickname": "친구3", "isExaminer": false }
+        { "user_id": 1, "nickname": "나", "is_examiner": false },
+        { "user_id": 2, "nickname": "친구1", "is_examiner": true },
+        { "user_id": 3, "nickname": "친구2", "is_examiner": false },
+        { "user_id": 4, "nickname": "친구3", "is_examiner": false }
       ],
       "question": { "content": "가장 좋아하는 음식은?" }
     }
@@ -83,13 +83,13 @@
 
 **백그라운드:**
 ```
-나(Unity) → 서버: SUBMIT_CARD { cardId: 42 }
+나(Unity) → 서버: SUBMIT_CARD { card_id: 42 }
 나(Unity) ← 서버: CARD_SUBMITTED (제출 확인)
 
 [3명 모두 제출]
 출제자(Unity) ← 서버: ALL_CARDS_SUBMITTED (제출된 카드 목록)
 
-출제자(Unity) → 서버: EXAMINER_SELECT { participantId: 3 }
+출제자(Unity) → 서버: EXAMINER_SELECT { participant_id: 3 }
 4명(Unity) ← 서버: EXAMINER_SELECTED (선택 결과 + 점수)
 ```
 
@@ -168,7 +168,7 @@ Unity: WebSocket 연결 종료
 ```java
 // 핸드셰이크 시
 Authentication auth = jwtProvider.authentication(token);
-// 토큰 디코딩: { userId: 1, nickname: "나" }
+// 토큰 디코딩: { user_id: 1, nickname: "나" }
 
 // JOIN_ROOM 처리
 User user = (User) session.getAttributes().get("userPrincipal");
@@ -180,7 +180,7 @@ participant.setUserId(user);  // DB에 저장
 ```java
 // 핸드셰이크 시 (같은 토큰!)
 Authentication auth = jwtProvider.authentication(token);
-// 토큰 디코딩: { userId: 1, nickname: "나" }
+// 토큰 디코딩: { user_id: 1, nickname: "나" }
 
 // CONNECT_GAME 처리
 User user = (User) session.getAttributes().get("userPrincipal");
@@ -270,11 +270,11 @@ var participant = participantRepository.findByRoomIdIdAndUserIdId(
        │  (token, roomCode)    │<--WebSocket(token)---|
        │                       │                       │
        │                       │<--CONNECT_GAME--------|
-       │                       │   (roomCode:123456)   │
+       │                       │   (room_code:123456)   │
        │                       │                       │
        │                       │  [토큰 검증]           │
        │                       │  userId = 1           │
-       │                       │  roomCode = 123456    │
+       │                       │  room_code = 123456    │
        │                       │  → 같은 유저 확인 ✅   │
        │                       │                       │
        │                       │  [4명 Unity 연결]     │

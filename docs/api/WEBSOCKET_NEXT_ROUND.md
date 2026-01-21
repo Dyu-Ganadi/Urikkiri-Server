@@ -19,10 +19,10 @@
 ```json
 {
   "type": "NEXT_ROUND",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "newExaminerId": 3,
-    "newExaminerNickname": "민수",
+    "new_examiner_id": 3,
+    "new_examiner_nickname": "민수",
     "quiz": {
       "id": 42,
       "content": "다음 중 맞춤법이 올바른 것은?"
@@ -322,14 +322,14 @@ NEXT_ROUND 브로드캐스트
 
 ```java
 // 제출된 카드 초기화
-submittedCards.put(roomCode, new ArrayList<>());
+submittedCards.put(room_code, new ArrayList<>());
 
 // 출제자 히스토리 업데이트
 examinerHistory.get(roomCode).add(newExaminerParticipantId);
 
 // 모두 출제했으면 히스토리 초기화
 if (examinerHistory.get(roomCode).size() == 4) {
-    examinerHistory.put(roomCode, new ArrayList<>());
+    examinerHistory.put(room_code, new ArrayList<>());
 }
 ```
 

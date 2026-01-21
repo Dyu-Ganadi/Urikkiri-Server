@@ -98,7 +98,7 @@ public enum ClientType {
 2. 서버 → 클라이언트: CONNECTED
 
 3. 클라이언트 → 서버: CREATE_ROOM
-4. 서버 → 클라이언트: ROOM_CREATED (roomCode, participants[방장])
+4. 서버 → 클라이언트: ROOM_CREATED (room_code, participants[방장])
 
 5. 다른 클라이언트 → 서버: JOIN_ROOM (roomCode)
 6. 서버 → 모든 클라이언트: USER_JOINED (전체 participants: 기존 유저 + 새 유저)
@@ -191,15 +191,15 @@ class GameClient {
     }
 
     // Unity 게임 실행
-    launchUnityGame(token: string, roomCode: string) {
+    launchUnityGame(token: string, room_code: string) {
         // Unity 게임에 토큰과 방코드 전달
         if (window.unityInstance) {
             unityInstance.SendMessage('GameManager', 'ConnectToServer',
                 JSON.stringify({
                     token: token,
-                    roomCode: message.roomCode,
+                    room_code: message.room_code,
                     participants: message.data.participants
-                    roomCode: roomCode,
+                    room_code: room_code,
             );
         }
     }

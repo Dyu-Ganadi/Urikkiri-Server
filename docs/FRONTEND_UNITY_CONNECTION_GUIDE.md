@@ -35,7 +35,7 @@
 ```json
 {
   "type": "GAME_READY",
-  "roomCode": "123456",
+  "room_code": "123456",
   "data": {
     "participants": [...]
   },
@@ -57,7 +57,7 @@ if (message.type === 'GAME_READY') {
     // ⚠️ lobbyWs는 닫지 않고 유지!
     launchUnityGame({
         token: localStorage.getItem('accessToken'),
-        roomCode: message.roomCode,
+        room_code: message.room_code,
         serverUrl: 'ws://localhost:8080/ws'  // 같은 서버
     });
 }
@@ -73,7 +73,7 @@ Unity ← 서버: 연결 확인
 ```json
 {
   "type": "CONNECT_GAME",
-  "roomCode": "123456"
+  "room_code": "123456"
 }
 ```
 
@@ -89,11 +89,11 @@ Unity ← 서버: 연결 확인
 ```json
 {
   "type": "GAME_START",
-  "roomCode": "123456",
+  "room_code": "123456",
   "data": {
     "participants": [...],
     "question": {
-      "quizId": 42,
+      "quiz_id": 42,
       "content": "가장 좋아하는 음식은?"
     }
   }
@@ -203,7 +203,7 @@ function GameLobby() {
                 // Unity 게임 실행
                 launchUnityGame({
                     token: token,
-                    roomCode: message.roomCode,
+                    room_code: message.room_code,
                     serverUrl: 'ws://localhost:8080/ws'
                 });
             }
@@ -265,7 +265,7 @@ public class GameServerConnection : MonoBehaviour
             Debug.Log("✅ 게임 서버 연결");
             
             // CONNECT_GAME 전송
-            var msg = new { type = "CONNECT_GAME", roomCode = config.roomCode };
+            var msg = new { type = "CONNECT_GAME", room_code = config.roomCode };
             websocket.SendText(JsonUtility.ToJson(msg));
         };
         
@@ -298,8 +298,8 @@ public class GameServerConnection : MonoBehaviour
     {
         var msg = new {
             type = "SUBMIT_CARD",
-            roomCode = currentRoomCode,
-            data = new { cardId = cardId }
+            room_code = currentRoomCode,
+            data = new { card_id = cardId }
         };
         websocket.SendText(JsonUtility.ToJson(msg));
     }
@@ -320,7 +320,7 @@ private Map<String, Set<WebSocketSession>> gameRoomSessions;   // Unity
 ### WebSocketHandler
 ```java
 // 1. JOIN_ROOM: 프론트엔드 로비 세션에 추가
-sessionManager.addLobbySession(roomCode, session);
+sessionManager.addLobbySession(room_code, session);
 
 // 2. 4명 모이면: GAME_READY 전송
 if (participants.size() == 4) {
@@ -329,7 +329,7 @@ if (participants.size() == 4) {
 }
 
 // 3. CONNECT_GAME: Unity 게임 세션에 추가
-sessionManager.addGameSession(roomCode, session);
+sessionManager.addGameSession(room_code, session);
 
 // 4. 4명 Unity 연결: GAME_START 전송
 if (gameSessions.size() == participants.size()) {

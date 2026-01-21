@@ -55,7 +55,7 @@ lobbyWs.send(JSON.stringify({
 // 또는 방 참여
 lobbyWs.send(JSON.stringify({
     type: 'JOIN_ROOM',
-    roomCode: '123456'
+    room_code: '123456'
 }));
 ```
 
@@ -69,32 +69,32 @@ lobbyWs.send(JSON.stringify({
 ```json
 {
   "type": "GAME_READY",
-  "roomCode": "123456",
+  "room_code": "123456",
   "data": {
     "participants": [
       {
-        "userId": 1,
+        "user_id": 1,
         "nickname": "플레이어1",
         "level": 5,
-        "isExaminer": true
+        "is_examiner": true
       },
       {
-        "userId": 2,
+        "user_id": 2,
         "nickname": "플레이어2",
         "level": 3,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 3,
+        "user_id": 3,
         "nickname": "플레이어3",
         "level": 2,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 4,
+        "user_id": 4,
         "nickname": "플레이어4",
         "level": 7,
-        "isExaminer": false
+        "is_examiner": false
       }
     ],
     "message": "All players ready. Launch Unity game with your token and room code."
@@ -111,14 +111,14 @@ lobbyWs.onmessage = (event) => {
     if (message.type === 'GAME_READY') {
         console.log('🎮 게임 준비 완료!');
         
-        const roomCode = message.roomCode;
+        const room_code = message.roomCode;
         const token = localStorage.getItem('accessToken');
         
         // 게임 화면으로 전환하고 Unity 게임 실행
         // Unity 게임에 토큰과 방코드 전달
         launchUnityGame({
             token: token,
-            roomCode: roomCode,
+            room_code: room_code,
             serverUrl: 'ws://localhost:8080/ws'  // 같은 서버
         });
         
@@ -164,7 +164,7 @@ public class GameServerConnection : MonoBehaviour
     {
         var config = JsonUtility.FromJson<ServerConfig>(configJson);
         this.token = config.token;
-        this.roomCode = config.roomCode;
+        this.room_code = config.roomCode;
         this.serverUrl = config.serverUrl;
         
         StartConnection();
@@ -183,7 +183,7 @@ public class GameServerConnection : MonoBehaviour
             var connectMsg = new
             {
                 type = "CONNECT_GAME",
-                roomCode = roomCode
+                room_code = roomCode
             };
             
             string json = JsonUtility.ToJson(connectMsg);
@@ -273,7 +273,7 @@ function connectToGameServer(gameServerUrl, token, roomCode) {
         // CONNECT_GAME 메시지 전송
         gameWs.send(JSON.stringify({
             type: 'CONNECT_GAME',
-            roomCode: roomCode
+            room_code: roomCode
         }));
     };
     
@@ -296,36 +296,36 @@ function connectToGameServer(gameServerUrl, token, roomCode) {
 ```json
 {
   "type": "GAME_START",
-  "roomCode": "123456",
+  "room_code": "123456",
   "data": {
     "participants": [
       {
-        "userId": 1,
+        "user_id": 1,
         "nickname": "플레이어1",
         "level": 5,
-        "isExaminer": true
+        "is_examiner": true
       },
       {
-        "userId": 2,
+        "user_id": 2,
         "nickname": "플레이어2",
         "level": 3,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 3,
+        "user_id": 3,
         "nickname": "플레이어3",
         "level": 2,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 4,
+        "user_id": 4,
         "nickname": "플레이어4",
         "level": 7,
-        "isExaminer": false
+        "is_examiner": false
       }
     ],
     "question": {
-      "quizId": 42,
+      "quiz_id": 42,
       "content": "가장 좋아하는 음식은?"
     }
   },
@@ -405,7 +405,7 @@ class GameClient {
             // CONNECT_GAME 전송
             this.gameWs.send(JSON.stringify({
                 type: 'CONNECT_GAME',
-                roomCode: roomCode
+                room_code: roomCode
             }));
         };
         
@@ -467,7 +467,7 @@ class GameClient {
         if (this.lobbyWs && this.lobbyWs.readyState === WebSocket.OPEN) {
             this.lobbyWs.send(JSON.stringify({
                 type: 'JOIN_ROOM',
-                roomCode: roomCode
+                room_code: roomCode
             }));
         }
     }
@@ -477,8 +477,8 @@ class GameClient {
         if (this.gameWs && this.gameWs.readyState === WebSocket.OPEN) {
             this.gameWs.send(JSON.stringify({
                 type: 'SUBMIT_CARD',
-                roomCode: this.currentRoomCode,
-                data: { cardId: cardId }
+                room_code: this.currentRoomCode,
+                data: { card_id: cardId }
             }));
         }
     }
@@ -488,8 +488,8 @@ class GameClient {
         if (this.gameWs && this.gameWs.readyState === WebSocket.OPEN) {
             this.gameWs.send(JSON.stringify({
                 type: 'EXAMINER_SELECT',
-                roomCode: this.currentRoomCode,
-                data: { participantId: participantId }
+                room_code: this.currentRoomCode,
+                data: { participant_id: participantId }
             }));
         }
     }
@@ -509,7 +509,7 @@ document.getElementById('createRoomBtn').onclick = () => {
 
 // 방 참여 버튼 클릭 시
 document.getElementById('joinRoomBtn').onclick = () => {
-    const roomCode = document.getElementById('roomCodeInput').value;
+    const room_code = document.getElementById('roomCodeInput').value;
     client.joinRoom(roomCode);
 };
 ```

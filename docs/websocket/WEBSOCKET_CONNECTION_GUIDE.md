@@ -128,14 +128,14 @@ public enum WebSocketMessageType {
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record WebSocketMessage(
     WebSocketMessageType type,
-    String roomCode,
+    String room_code,
     Object data,
     String message
 ) {
     // 정적 팩토리 메서드
     public static WebSocketMessage of(WebSocketMessageType type, String message);
-    public static WebSocketMessage of(WebSocketMessageType type, String roomCode, String message);
-    public static WebSocketMessage withData(WebSocketMessageType type, String roomCode, 
+    public static WebSocketMessage of(WebSocketMessageType type, String room_code, String message);
+    public static WebSocketMessage withData(WebSocketMessageType type, String room_code, 
                                            Object data, String message);
 }
 ```
@@ -209,7 +209,7 @@ ws.onmessage = (event) => {
         // 연결 후 원하는 메시지 전송
         sendMessage('CREATE_ROOM');
         // 또는
-        sendMessage('JOIN_ROOM', { roomCode: '123456' });
+        sendMessage('JOIN_ROOM', { room_code: '123456' });
     }
 };
 ```
@@ -303,11 +303,11 @@ public class WebSocketSessionManager {
     // roomCode -> Set<WebSocketSession>
     private final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
     
-    public void addSession(String roomCode, WebSocketSession session) {
-        roomSessions.computeIfAbsent(roomCode, k -> new CopyOnWriteArraySet<>()).add(session);
+    public void addSession(String room_code, WebSocketSession session) {
+        roomSessions.computeIfAbsent(room_code, k -> new CopyOnWriteArraySet<>()).add(session);
     }
     
-    public void removeSession(String roomCode, WebSocketSession session) {
+    public void removeSession(String room_code, WebSocketSession session) {
         Set<WebSocketSession> sessions = roomSessions.get(roomCode);
         if (sessions != null) {
             sessions.remove(session);
@@ -318,7 +318,7 @@ public class WebSocketSessionManager {
     }
     
     public Set<WebSocketSession> getSessionsByRoom(String roomCode) {
-        return roomSessions.getOrDefault(roomCode, Set.of());
+        return roomSessions.getOrDefault(room_code, Set.of());
     }
     
     public String getRoomCodeBySession(WebSocketSession session) {

@@ -20,9 +20,9 @@
 ```json
 {
   "type": "EXAMINER_SELECT",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "participantId": 2
+    "participant_id": 2
   }
 }
 ```
@@ -40,9 +40,9 @@
 const selectWinner = (participantId) => {
   const message = {
     type: 'EXAMINER_SELECT',
-    roomCode: roomCode,
+    room_code: room_code,
     data: {
-      participantId: participantId
+      participant_id: participantId
     }
   };
   
@@ -83,9 +83,9 @@ function displaySubmittedCards(cards) {
 #### React
 ```typescript
 interface SubmittedCard {
-  participantId: number;
+  participant_id: number;
   nickname: string;
-  cardId: number;
+  card_id: number;
   word: string;
   meaning: string;
 }
@@ -95,7 +95,7 @@ const ExaminerSelection: React.FC = () => {
   const [selectedWinner, setSelectedWinner] = useState<number | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
-  const handleSelectWinner = (participantId: number) => {
+  const handleSelectWinner = (participant_id: number) => {
     if (isSelecting) return; // 중복 클릭 방지
     
     setSelectedWinner(participantId);
@@ -103,7 +103,7 @@ const ExaminerSelection: React.FC = () => {
     
     const message = {
       type: 'EXAMINER_SELECT',
-      roomCode: roomCode,
+      room_code: room_code,
       data: { participantId }
     };
     
@@ -146,12 +146,12 @@ const ExaminerSelection: React.FC = () => {
 ```json
 {
   "type": "EXAMINER_SELECTED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "participantId": 2,
-    "cardWord": "다솜",
-    "winnerNickname": "철수",
-    "newBananaScore": 1
+    "participant_id": 2,
+    "card_word": "다솜",
+    "winner_nickname": "철수",
+    "new_banana_score": 1
   },
   "message": "Examiner has selected a card"
 }
@@ -212,7 +212,7 @@ function displayRoundResult(nickname, word, score) {
 #### React
 ```typescript
 interface RoundResult {
-  participantId: number;
+  participant_id: number;
   cardWord: string;
   winnerNickname: string;
   newBananaScore: number;
@@ -283,10 +283,10 @@ const GameRoom: React.FC = () => {
 ```json
 {
   "type": "NEXT_ROUND",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "newExaminerId": 3,
-    "newExaminerNickname": "민수",
+    "new_examiner_id": 3,
+    "new_examiner_nickname": "민수",
     "quiz": {
       "id": 42,
       "content": "다음 중 맞춤법이 올바른 것은?"
@@ -311,37 +311,37 @@ const GameRoom: React.FC = () => {
 ```json
 {
   "type": "ROUND_END",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "winnerNickname": "철수",
+    "winner_nickname": "철수",
     "rankings": [
       {
         "rank": 1,
-        "userId": 2,
+        "user_id": 2,
         "nickname": "철수",
-        "bananaScore": 5,
-        "xpReward": 100
+        "banana_score": 5,
+        "xp_reward": 100
       },
       {
         "rank": 2,
-        "userId": 3,
+        "user_id": 3,
         "nickname": "민수",
-        "bananaScore": 3,
-        "xpReward": 75
+        "banana_score": 3,
+        "xp_reward": 75
       },
       {
         "rank": 3,
-        "userId": 4,
+        "user_id": 4,
         "nickname": "영희",
-        "bananaScore": 2,
-        "xpReward": 50
+        "banana_score": 2,
+        "xp_reward": 50
       },
       {
         "rank": 4,
-        "userId": 5,
+        "user_id": 5,
         "nickname": "지훈",
-        "bananaScore": 1,
-        "xpReward": 25
+        "banana_score": 1,
+        "xp_reward": 25
       }
     ]
   },

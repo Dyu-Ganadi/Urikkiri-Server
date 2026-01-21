@@ -54,7 +54,7 @@ Unity 게임 ─┘
 ```json
 {
   "type": "MESSAGE_TYPE",
-  "roomCode": "123456",
+  "room_code": "123456",
   "data": {},
   "message": "설명 메시지"
 }
@@ -115,7 +115,7 @@ Unity 게임 ─┘
 ```json
 {
   "type": "ROOM_CREATED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "message": "Room created successfully"
 }
 ```
@@ -135,7 +135,7 @@ Unity 게임 ─┘
 ```json
 {
   "type": "JOIN_ROOM",
-  "roomCode": "764185"
+  "room_code": "764185"
 }
 ```
 
@@ -156,19 +156,19 @@ Unity 게임 ─┘
 ```json
 {
   "type": "USER_JOINED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": [
     {
-      "userId": 1,
+      "user_id": 1,
       "nickname": "방장",
       "level": 5,
-      "isExaminer": true
+      "is_examiner": true
     },
     {
-      "userId": 2,
+      "user_id": 2,
       "nickname": "새로운 유저",
       "level": 3,
-      "isExaminer": false
+      "is_examiner": false
     }
   ],
   "message": "새로운 유저 joined the room"
@@ -193,32 +193,32 @@ Unity 게임 ─┘
 ```json
 {
   "type": "GAME_READY",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
     "participants": [
       {
-        "userId": 1,
+        "user_id": 1,
         "nickname": "방장",
         "level": 5,
-        "isExaminer": true
+        "is_examiner": true
       },
       {
-        "userId": 2,
+        "user_id": 2,
         "nickname": "나",
         "level": 3,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 3,
+        "user_id": 3,
         "nickname": "친구1",
         "level": 2,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 4,
+        "user_id": 4,
         "nickname": "친구2",
         "level": 7,
-        "isExaminer": false
+        "is_examiner": false
       }
     ],
     "message": "All players ready. Launch Unity game with your token and room code."
@@ -240,7 +240,7 @@ if (message.type === 'GAME_READY') {
     // Unity 게임 실행
     launchUnityGame({
         token: localStorage.getItem('accessToken'),
-        roomCode: message.roomCode,
+        room_code: message.room_code,
         serverUrl: 'ws://localhost:8080/ws',
         participants: message.data.participants
     });
@@ -259,14 +259,14 @@ if (message.type === 'GAME_READY') {
 ```json
 {
   "type": "CONNECT_GAME",
-  "roomCode": "764185"
+  "room_code": "764185"
 }
 ```
 
 **Unity C# 예시**:
 ```csharp
 websocket.OnOpen += () => {
-    var msg = new { type = "CONNECT_GAME", roomCode = currentRoomCode };
+    var msg = new { type = "CONNECT_GAME", room_code = currentRoomCode };
     websocket.SendText(JsonUtility.ToJson(msg));
 };
 ```
@@ -283,7 +283,7 @@ websocket.OnOpen += () => {
 ```json
 {
   "type": "ROOM_EXIT",
-  "roomCode": "764185"
+  "room_code": "764185"
 }
 ```
 
@@ -315,7 +315,7 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```json
 {
   "type": "CONNECT_GAME",
-  "roomCode": "764185"
+  "room_code": "764185"
 }
 ```
 
@@ -340,36 +340,36 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```json
 {
   "type": "GAME_START",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
     "participants": [
       {
-        "userId": 1,
+        "user_id": 1,
         "nickname": "방장",
         "level": 5,
-        "isExaminer": true
+        "is_examiner": true
       },
       {
-        "userId": 2,
+        "user_id": 2,
         "nickname": "나",
         "level": 3,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 3,
+        "user_id": 3,
         "nickname": "친구1",
         "level": 2,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 4,
+        "user_id": 4,
         "nickname": "친구2",
         "level": 7,
-        "isExaminer": false
+        "is_examiner": false
       }
     ],
     "question": {
-      "quizId": 42,
+      "quiz_id": 42,
       "content": "가장 좋아하는 음식은?"
     }
   },
@@ -384,7 +384,7 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
   - `content`: 질문 내용
 
 **Unity 처리**:
-- 출제자(`isExaminer: true`)는 대기
+- 출제자(`is_examiner: true`)는 대기
 - 나머지 3명은 카드 선택 화면 표시
 
 ---
@@ -399,9 +399,9 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```json
 {
   "type": "SUBMIT_CARD",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "cardId": 123
+    "card_id": 123
   }
 }
 ```
@@ -427,7 +427,7 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```json
 {
   "type": "CARD_SUBMITTED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "message": "Card submitted successfully"
 }
 ```
@@ -444,25 +444,25 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```json
 {
   "type": "ALL_CARDS_SUBMITTED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": [
     {
-      "participantId": 2,
+      "participant_id": 2,
       "participantNickname": "나",
-      "cardId": 123,
-      "cardWord": "치킨"
+      "card_id": 123,
+      "card_word": "치킨"
     },
     {
-      "participantId": 3,
+      "participant_id": 3,
       "participantNickname": "친구1",
-      "cardId": 456,
-      "cardWord": "피자"
+      "card_id": 456,
+      "card_word": "피자"
     },
     {
-      "participantId": 4,
+      "participant_id": 4,
       "participantNickname": "친구2",
-      "cardId": 789,
-      "cardWord": "떡볶이"
+      "card_id": 789,
+      "card_word": "떡볶이"
     }
   ],
   "message": "All cards have been submitted"
@@ -491,9 +491,9 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```json
 {
   "type": "EXAMINER_SELECT",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "participantId": 2
+    "participant_id": 2
   }
 }
 ```
@@ -519,11 +519,11 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```json
 {
   "type": "EXAMINER_SELECTED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
     "selectedParticipantId": 2,
     "selectedCardWord": "치킨",
-    "winnerNickname": "나",
+    "winner_nickname": "나",
     "newScore": 1
   },
   "message": "Examiner has selected a card"
@@ -553,12 +553,12 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```json
 {
   "type": "NEXT_ROUND",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
     "examinerId": 3,
     "examinerNickname": "친구1",
     "question": {
-      "quizId": 88,
+      "quiz_id": 88,
       "content": "가장 가고 싶은 여행지는?"
     }
   },
@@ -593,36 +593,36 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```json
 {
   "type": "ROUND_END",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
     "rankings": [
       {
-        "userId": 3,
+        "user_id": 3,
         "nickname": "친구1",
         "finalScore": 5,
         "rank": 1,
-        "xpReward": 20
+        "xp_reward": 20
       },
       {
-        "userId": 2,
+        "user_id": 2,
         "nickname": "나",
         "finalScore": 3,
         "rank": 2,
-        "xpReward": 10
+        "xp_reward": 10
       },
       {
-        "userId": 1,
+        "user_id": 1,
         "nickname": "방장",
         "finalScore": 2,
         "rank": 3,
-        "xpReward": 5
+        "xp_reward": 5
       },
       {
-        "userId": 4,
+        "user_id": 4,
         "nickname": "친구2",
         "finalScore": 1,
         "rank": 4,
-        "xpReward": 2
+        "xp_reward": 2
       }
     ]
   },
@@ -775,10 +775,10 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 **ParticipantInfo**
 ```java
 {
-  "userId": Long,
+  "user_id": Long,
   "nickname": String,
   "level": Integer,
-  "isExaminer": Boolean
+  "is_examiner": Boolean
 }
 ```
 
@@ -795,7 +795,7 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 {
   "participants": ParticipantInfo[],
   "question": {
-    "quizId": Long,
+    "quiz_id": Long,
     "content": String
   }
 }
@@ -804,10 +804,10 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 **SubmittedCardInfo**
 ```java
 {
-  "participantId": Long,
+  "participant_id": Long,
   "participantNickname": String,
-  "cardId": Long,
-  "cardWord": String
+  "card_id": Long,
+  "card_word": String
 }
 ```
 
@@ -816,7 +816,7 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 {
   "selectedParticipantId": Long,
   "selectedCardWord": String,
-  "winnerNickname": String,
+  "winner_nickname": String,
   "newScore": Integer
 }
 ```
@@ -827,7 +827,7 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
   "examinerId": Long,
   "examinerNickname": String,
   "question": {
-    "quizId": Long,
+    "quiz_id": Long,
     "content": String
   }
 }
@@ -843,11 +843,11 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 **PlayerRankInfo**
 ```java
 {
-  "userId": Long,
+  "user_id": Long,
   "nickname": String,
   "finalScore": Integer,
   "rank": Integer,
-  "xpReward": Integer
+  "xp_reward": Integer
 }
 ```
 

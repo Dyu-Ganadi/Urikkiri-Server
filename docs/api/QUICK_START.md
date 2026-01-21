@@ -86,7 +86,7 @@ ws.send(JSON.stringify({
 ```json
 {
   "type": "ROOM_CREATED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "message": "Room created successfully"
 }
 ```
@@ -102,7 +102,7 @@ ws.send(JSON.stringify({
 ```javascript
 ws.send(JSON.stringify({
     type: 'JOIN_ROOM',
-    roomCode: '764185'
+    room_code: '764185'
 }));
 ```
 
@@ -110,10 +110,10 @@ ws.send(JSON.stringify({
 ```json
 {
   "type": "USER_JOINED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": [
-    { "userId": 1, "nickname": "방장", "level": 5 },
-    { "userId": 2, "nickname": "나", "level": 3 }
+    { "user_id": 1, "nickname": "방장", "level": 5 },
+    { "user_id": 2, "nickname": "나", "level": 3 }
   ],
   "message": "나 joined the room"
 }
@@ -129,13 +129,13 @@ ws.send(JSON.stringify({
 ```json
 {
   "type": "GAME_READY",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
     "participants": [
-      { "userId": 1, "nickname": "플레이어1", "isExaminer": true },
-      { "userId": 2, "nickname": "플레이어2", "isExaminer": false },
-      { "userId": 3, "nickname": "플레이어3", "isExaminer": false },
-      { "userId": 4, "nickname": "플레이어4", "isExaminer": false }
+      { "user_id": 1, "nickname": "플레이어1", "is_examiner": true },
+      { "user_id": 2, "nickname": "플레이어2", "is_examiner": false },
+      { "user_id": 3, "nickname": "플레이어3", "is_examiner": false },
+      { "user_id": 4, "nickname": "플레이어4", "is_examiner": false }
     ]
   }
 }
@@ -154,7 +154,7 @@ ws.onmessage = (event) => {
         // Unity 게임 실행!
         launchUnityGame({
             token: token,
-            roomCode: message.roomCode,
+            room_code: message.room_code,
             serverUrl: 'ws://localhost:8080/ws'
         });
     }
@@ -186,7 +186,7 @@ IEnumerator ConnectToGameServer(ServerConfig config) {
         Debug.Log("✅ 게임 서버 연결 성공");
         
         // CONNECT_GAME 전송
-        var msg = new { type = "CONNECT_GAME", roomCode = config.roomCode };
+        var msg = new { type = "CONNECT_GAME", room_code = config.roomCode };
         websocket.SendText(JsonUtility.ToJson(msg));
     };
     
@@ -199,7 +199,7 @@ IEnumerator ConnectToGameServer(ServerConfig config) {
 ```csharp
 // 프론트엔드에서 받은 설정
 string token = config.token;
-string roomCode = config.roomCode;
+string room_code = config.roomCode;
 
 // 새 연결 생성
 WebSocket gameWs = new WebSocket($"ws://localhost:8080/ws?token={token}");
@@ -220,11 +220,11 @@ gameWs.OnOpen += () => {
 ```json
 {
   "type": "GAME_START",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
     "participants": [...],
     "question": {
-      "quizId": 42,
+      "quiz_id": 42,
       "content": "가장 좋아하는 음식은?"
     }
   }
@@ -240,8 +240,8 @@ gameWs.OnOpen += () => {
 ```csharp
 gameWs.SendText(JsonUtility.ToJson(new {
     type = "SUBMIT_CARD",
-    roomCode = roomCode,
-    data = new { cardId = 123 }
+    room_code = room_code,
+    data = new { card_id = 123 }
 }));
 ```
 
@@ -252,9 +252,9 @@ gameWs.SendText(JsonUtility.ToJson(new {
 {
   "type": "ALL_CARDS_SUBMITTED",
   "data": [
-    { "participantId": 2, "cardWord": "치킨" },
-    { "participantId": 3, "cardWord": "피자" },
-    { "participantId": 4, "cardWord": "떡볶이" }
+    { "participant_id": 2, "card_word": "치킨" },
+    { "participant_id": 3, "card_word": "피자" },
+    { "participant_id": 4, "card_word": "떡볶이" }
   ]
 }
 ```
@@ -263,8 +263,8 @@ gameWs.SendText(JsonUtility.ToJson(new {
 ```csharp
 gameWs.SendText(JsonUtility.ToJson(new {
     type = "EXAMINER_SELECT",
-    roomCode = roomCode,
-    data = new { participantId = 2 }
+    room_code = room_code,
+    data = new { participant_id = 2 }
 }));
 ```
 
@@ -275,10 +275,10 @@ gameWs.SendText(JsonUtility.ToJson(new {
 {
   "type": "EXAMINER_SELECTED",
   "data": {
-    "selectedParticipantId": 2,
-    "selectedCardWord": "치킨",
-    "winnerNickname": "플레이어2",
-    "newScore": 1
+    "selected_participant_id": 2,
+    "selected_card_word": "치킨",
+    "winner_nickname": "플레이어2",
+    "new_score": 1
   }
 }
 ```
@@ -311,10 +311,10 @@ gameWs.SendText(JsonUtility.ToJson(new {
   "type": "ROUND_END",
   "data": {
     "rankings": [
-      { "userId": 2, "nickname": "플레이어2", "finalScore": 5, "rank": 1, "xpReward": 20 },
-      { "userId": 3, "nickname": "플레이어3", "finalScore": 3, "rank": 2, "xpReward": 10 },
-      { "userId": 1, "nickname": "플레이어1", "finalScore": 2, "rank": 3, "xpReward": 5 },
-      { "userId": 4, "nickname": "플레이어4", "finalScore": 1, "rank": 4, "xpReward": 2 }
+      { "user_id": 2, "nickname": "플레이어2", "finalScore": 5, "rank": 1, "xp_reward": 20 },
+      { "user_id": 3, "nickname": "플레이어3", "finalScore": 3, "rank": 2, "xp_reward": 10 },
+      { "user_id": 1, "nickname": "플레이어1", "finalScore": 2, "rank": 3, "xp_reward": 5 },
+      { "user_id": 4, "nickname": "플레이어4", "finalScore": 1, "rank": 4, "xp_reward": 2 }
     ]
   }
 }
@@ -331,7 +331,7 @@ class GameClient {
     constructor(token) {
         this.token = token;
         this.ws = null;
-        this.roomCode = null;
+        this.room_code = null;
     }
 
     connect() {
@@ -351,11 +351,11 @@ class GameClient {
                 console.log('서버 연결 확인');
                 break;
             case 'ROOM_CREATED':
-                this.roomCode = msg.roomCode;
+                this.room_code = msg.roomCode;
                 console.log(`방 생성: ${this.roomCode}`);
                 break;
             case 'USER_JOINED':
-                this.roomCode = msg.roomCode;
+                this.room_code = msg.roomCode;
                 console.log(`방 참여: ${this.roomCode}`);
                 console.log('참가자:', msg.data);
                 break;
@@ -376,7 +376,7 @@ class GameClient {
     joinRoom(roomCode) {
         this.ws.send(JSON.stringify({ 
             type: 'JOIN_ROOM', 
-            roomCode: roomCode 
+            room_code: roomCode 
         }));
     }
 
@@ -387,7 +387,7 @@ class GameClient {
             unityInstance.SendMessage('GameManager', 'ConnectToServer', 
                 JSON.stringify({
                     token: this.token,
-                    roomCode: roomCode,
+                    room_code: room_code,
                     serverUrl: 'ws://localhost:8080/ws'
                 })
             );
@@ -438,13 +438,13 @@ public class GameClient : MonoBehaviour
 
     private async System.Threading.Tasks.Task Connect(ServerConfig config)
     {
-        roomCode = config.roomCode;
+        room_code = config.roomCode;
         ws = new WebSocket($"{config.serverUrl}?token={config.token}");
 
         ws.OnOpen += () =>
         {
             Debug.Log("✅ 게임 서버 연결");
-            SendMessage("CONNECT_GAME", new { roomCode = roomCode });
+            SendMessage("CONNECT_GAME", new { room_code = roomCode });
         };
 
         ws.OnMessage += (bytes) =>
@@ -491,16 +491,16 @@ public class GameClient : MonoBehaviour
     public void SubmitCard(int cardId)
     {
         SendMessage("SUBMIT_CARD", new {
-            roomCode = roomCode,
-            data = new { cardId = cardId }
+            room_code = room_code,
+            data = new { card_id = cardId }
         });
     }
 
     public void SelectWinner(long participantId)
     {
         SendMessage("EXAMINER_SELECT", new {
-            roomCode = roomCode,
-            data = new { participantId = participantId }
+            room_code = room_code,
+            data = new { participant_id = participantId }
         });
     }
 
@@ -560,7 +560,7 @@ public class GameClient : MonoBehaviour
 - roomCode 필드 확인
 
 **출제자가 카드 제출**:
-- 출제자(`isExaminer: true`)는 카드 제출 불가
+- 출제자(`is_examiner: true`)는 카드 제출 불가
 - GAME_START에서 isExaminer 확인
 
 ---

@@ -76,7 +76,7 @@ Content-Type: application/json
 **응답 (201 Created)**:
 ```json
 {
-  "userId": 123,
+  "user_id": 123,
   "username": "newuser",
   "nickname": "닉네임",
   "level": 1
@@ -121,7 +121,7 @@ Authorization: Bearer {accessToken}
 **응답 (200 OK)**:
 ```json
 {
-  "userId": 1,
+  "user_id": 1,
   "username": "testuser",
   "nickname": "테스터",
   "level": 5,
@@ -166,43 +166,43 @@ Authorization: Bearer {accessToken}
 {
   "cards": [
     {
-      "cardId": 1,
+      "card_id": 1,
       "word": "치킨"
     },
     {
-      "cardId": 2,
+      "card_id": 2,
       "word": "피자"
     },
     {
-      "cardId": 3,
+      "card_id": 3,
       "word": "떡볶이"
     },
     {
-      "cardId": 4,
+      "card_id": 4,
       "word": "햄버거"
     },
     {
-      "cardId": 5,
+      "card_id": 5,
       "word": "초밥"
     },
     {
-      "cardId": 6,
+      "card_id": 6,
       "word": "파스타"
     },
     {
-      "cardId": 7,
+      "card_id": 7,
       "word": "라면"
     },
     {
-      "cardId": 8,
+      "card_id": 8,
       "word": "족발"
     },
     {
-      "cardId": 9,
+      "card_id": 9,
       "word": "삼겹살"
     },
     {
-      "cardId": 10,
+      "card_id": 10,
       "word": "김밥"
     }
   ]

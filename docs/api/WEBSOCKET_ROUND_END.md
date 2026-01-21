@@ -19,37 +19,37 @@
 ```json
 {
   "type": "ROUND_END",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "winnerNickname": "철수",
+    "winner_nickname": "철수",
     "rankings": [
       {
         "rank": 1,
-        "userId": 2,
+        "user_id": 2,
         "nickname": "철수",
-        "bananaScore": 5,
-        "xpReward": 20
+        "banana_score": 5,
+        "xp_reward": 20
       },
       {
         "rank": 2,
-        "userId": 3,
+        "user_id": 3,
         "nickname": "민수",
-        "bananaScore": 3,
-        "xpReward": 10
+        "banana_score": 3,
+        "xp_reward": 10
       },
       {
         "rank": 3,
-        "userId": 4,
+        "user_id": 4,
         "nickname": "영희",
-        "bananaScore": 2,
-        "xpReward": 5
+        "banana_score": 2,
+        "xp_reward": 5
       },
       {
         "rank": 4,
-        "userId": 5,
+        "user_id": 5,
         "nickname": "지훈",
-        "bananaScore": 1,
-        "xpReward": 2
+        "banana_score": 1,
+        "xp_reward": 2
       }
     ]
   },
@@ -201,7 +201,7 @@ function goToLobby() {
 ```typescript
 interface PlayerRankInfo {
   rank: number;
-  userId: number;
+  user_id: number;
   nickname: string;
   bananaScore: number;
   xpReward: number;
@@ -383,7 +383,7 @@ const showConfetti = () => {
 ### 1. 점수 확인
 ```java
 if (winner.getBananaScore() >= 5) {
-    endGame(roomCode, room.getId());
+    endGame(room_code, room.getId());
 }
 ```
 

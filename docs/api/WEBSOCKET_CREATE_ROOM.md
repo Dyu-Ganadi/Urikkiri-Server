@@ -21,13 +21,13 @@
 ```json
 {
   "type": "ROOM_CREATED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": [
     {
-      "userId": 1,
+      "user_id": 1,
       "nickname": "방장",
       "level": 5,
-      "isExaminer": true
+      "is_examiner": true
     }
   ],
   "message": "Room created successfully"
@@ -140,7 +140,7 @@ ws.onmessage = (event) => {
 import { useEffect, useRef, useState } from 'react';
 
 function CreateRoomPage() {
-  const [roomCode, setRoomCode] = useState(null);
+  const [room_code, setRoomCode] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [error, setError] = useState(null);
   const wsRef = useRef(null);
@@ -185,7 +185,7 @@ function CreateRoomPage() {
           <h3>참가자 ({participants.length}/4)</h3>
           <ul>
             {participants.map(p => (
-              <li key={p.userId}>
+              <li key={p.user_id}>
                 {p.nickname} (Lv.{p.level})
               </li>
             ))}

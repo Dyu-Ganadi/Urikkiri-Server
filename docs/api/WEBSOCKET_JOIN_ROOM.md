@@ -9,13 +9,13 @@
 ```json
 {
   "type": "JOIN_ROOM",
-  "roomCode": "764185"
+  "room_code": "764185"
 }
 ```
 
 ### 필드 설명
 - `type` (string, 필수): 메시지 타입, 반드시 `"JOIN_ROOM"` 이어야 함
-- `roomCode` (string, 필수): 참가할 방의 6자리 코드
+- `room_code` (string, 필수): 참가할 방의 6자리 코드
 
 ## 응답
 
@@ -26,25 +26,25 @@
 ```json
 {
   "type": "USER_JOINED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": [
     {
-      "userId": 1,
+      "user_id": 1,
       "nickname": "방장",
       "level": 5,
-      "isExaminer": true
+      "is_examiner": true
     },
     {
-      "userId": 2,
+      "user_id": 2,
       "nickname": "참가자1",
       "level": 3,
-      "isExaminer": false
+      "is_examiner": false
     },
     {
-      "userId": 3,
+      "user_id": 3,
       "nickname": "나",
       "level": 2,
-      "isExaminer": false
+      "is_examiner": false
     }
   ],
   "message": "나 joined the room"
@@ -62,36 +62,36 @@
 ```json
 {
   "type": "GAME_START",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
     "participants": [
       {
-        "userId": 1,
+        "user_id": 1,
         "nickname": "방장",
         "level": 5,
-        "isExaminer": true
+        "is_examiner": true
       },
       {
-        "userId": 2,
+        "user_id": 2,
         "nickname": "참가자1",
         "level": 3,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 3,
+        "user_id": 3,
         "nickname": "참가자2",
         "level": 2,
-        "isExaminer": false
+        "is_examiner": false
       },
       {
-        "userId": 4,
+        "user_id": 4,
         "nickname": "참가자3",
         "level": 7,
-        "isExaminer": false
+        "is_examiner": false
       }
     ],
     "question": {
-      "quizId": 42,
+      "quiz_id": 42,
       "content": "가장 좋아하는 음식은?"
     }
   },
@@ -105,12 +105,12 @@
 
 ### 필드 설명
 - `type` (string): 응답 타입
-- `roomCode` (string): 방 코드
+- `room_code` (string): 방 코드
 - `data` (array): 현재 방의 전체 참가자 목록 (기존 유저 + 새 유저)
-  - `userId` (number): 사용자 ID
+  - `user_id` (number): 사용자 ID
   - `nickname` (string): 사용자 닉네임
   - `level` (number): 사용자 레벨
-  - `isExaminer` (boolean): 시험관 여부 (방장만 true)
+  - `is_examiner` (boolean): 시험관 여부 (방장만 true)
 - `message` (string): 상태 메시지
 
 ### 에러 응답
@@ -170,7 +170,7 @@ class GameRoom {
   joinRoom(roomCode) {
     const message = {
       type: 'JOIN_ROOM',
-      roomCode: roomCode
+      room_code: roomCode
     };
     this.ws.send(JSON.stringify(message));
   }
@@ -241,7 +241,7 @@ const gameRoom = new GameRoom(ws);
 ws.onopen = () => {
   // 방 참가 버튼 클릭 시
   document.getElementById('joinRoomBtn').addEventListener('click', () => {
-    const roomCode = document.getElementById('roomCodeInput').value;
+    const room_code = document.getElementById('roomCodeInput').value;
     gameRoom.joinRoom(roomCode);
   });
 };
@@ -256,7 +256,7 @@ ws.onmessage = (event) => {
 import { useEffect, useRef, useState } from 'react';
 
 function JoinRoomPage() {
-  const [roomCode, setRoomCode] = useState('');
+  const [room_code, setRoomCode] = useState('');
   const [participants, setParticipants] = useState([]);
   const [error, setError] = useState(null);
   const [isJoined, setIsJoined] = useState(false);
@@ -305,7 +305,7 @@ function JoinRoomPage() {
 
     wsRef.current?.send(JSON.stringify({
       type: 'JOIN_ROOM',
-      roomCode: roomCode
+      room_code: roomCode
     }));
   };
 
@@ -317,7 +317,7 @@ function JoinRoomPage() {
         <h3>참가자 목록</h3>
         <ul>
           {participants.map(p => (
-            <li key={p.userId}>
+            <li key={p.user_id}>
               {p.nickname} (Lv.{p.level})
             </li>
           ))}
@@ -334,7 +334,7 @@ function JoinRoomPage() {
         <h3>참가자 목록 ({participants.length}/4)</h3>
         <ul>
           {participants.map(p => (
-            <li key={p.userId}>
+            <li key={p.user_id}>
               {p.nickname} (Lv.{p.level})
             </li>
           ))}
@@ -379,7 +379,7 @@ function JoinRoomPage() {
       // 연결되자마자 자동으로 방 참가
       wsRef.current?.send(JSON.stringify({
         type: 'JOIN_ROOM',
-        roomCode: roomCode
+        room_code: roomCode
       }));
     };
 

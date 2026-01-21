@@ -20,9 +20,9 @@
 ```json
 {
   "type": "SUBMIT_CARD",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "cardId": 23
+    "card_id": 23
   }
 }
 ```
@@ -40,9 +40,9 @@
 const submitCard = (cardId) => {
   const message = {
     type: 'SUBMIT_CARD',
-    roomCode: roomCode,
+    room_code: room_code,
     data: {
-      cardId: cardId
+      card_id: cardId
     }
   };
   
@@ -53,7 +53,7 @@ const submitCard = (cardId) => {
 // 카드 선택 시
 document.querySelectorAll('.card').forEach(card => {
   card.addEventListener('click', () => {
-    const cardId = parseInt(card.dataset.cardId);
+    const card_id = parseInt(card.dataset.cardId);
     submitCard(cardId);
     
     // UI 업데이트
@@ -65,12 +65,12 @@ document.querySelectorAll('.card').forEach(card => {
 
 #### React
 ```typescript
-const submitCard = (cardId: number) => {
+const submitCard = (card_id: number) => {
   if (!ws) return;
   
   const message = {
     type: 'SUBMIT_CARD',
-    roomCode: roomCode,
+    room_code: room_code,
     data: { cardId }
   };
   
@@ -106,7 +106,7 @@ const submitCard = (cardId: number) => {
 ```json
 {
   "type": "CARD_SUBMITTED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "message": "Card submitted successfully"
 }
 ```
@@ -150,7 +150,7 @@ function disableCardSelection() {
 ```typescript
 interface Message {
   type: string;
-  roomCode: string;
+  room_code: string;
   message?: string;
   data?: any;
 }
@@ -186,26 +186,26 @@ const handleWebSocketMessage = (event: MessageEvent) => {
 ```json
 {
   "type": "ALL_CARDS_SUBMITTED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": [
     {
-      "participantId": 2,
+      "participant_id": 2,
       "nickname": "참가자1",
-      "cardId": 5,
+      "card_id": 5,
       "word": "다솜",
       "meaning": "사랑"
     },
     {
-      "participantId": 3,
+      "participant_id": 3,
       "nickname": "참가자2",
-      "cardId": 12,
+      "card_id": 12,
       "word": "미리내",
       "meaning": "은하수"
     },
     {
-      "participantId": 4,
+      "participant_id": 4,
       "nickname": "참가자3",
-      "cardId": 8,
+      "card_id": 8,
       "word": "바람꽃",
       "meaning": "바람에 흔들리는 꽃"
     }
@@ -263,7 +263,7 @@ function selectWinner(participantId) {
   // EXAMINER_SELECT 메시지 전송 (다음 API 참고)
   ws.send(JSON.stringify({
     type: 'EXAMINER_SELECT',
-    roomCode: roomCode,
+    room_code: room_code,
     data: { participantId }
   }));
 }
@@ -272,9 +272,9 @@ function selectWinner(participantId) {
 #### React
 ```typescript
 interface SubmittedCard {
-  participantId: number;
+  participant_id: number;
   nickname: string;
-  cardId: number;
+  card_id: number;
   word: string;
   meaning: string;
 }
@@ -293,12 +293,12 @@ const ExaminerView = () => {
     };
   }, []);
 
-  const handleSelectWinner = (participantId: number) => {
+  const handleSelectWinner = (participant_id: number) => {
     setSelectedWinner(participantId);
     
     ws.send(JSON.stringify({
       type: 'EXAMINER_SELECT',
-      roomCode: roomCode,
+      room_code: room_code,
       data: { participantId }
     }));
   };
@@ -430,10 +430,10 @@ const ExaminerView = () => {
 Map<String, List<SubmittedCardInfo>> submittedCards;
 
 // 방별로 제출된 카드 추적
-roomCode: "764185" → [
-  { participantId: 2, cardId: 5, word: "다솜", ... },
-  { participantId: 3, cardId: 12, word: "미리내", ... },
-  { participantId: 4, cardId: 8, word: "바람꽃", ... }
+room_code: "764185" → [
+  { participant_id: 2, card_id: 5, word: "다솜", ... },
+  { participant_id: 3, card_id: 12, word: "미리내", ... },
+  { participant_id: 4, card_id: 8, word: "바람꽃", ... }
 ]
 ```
 

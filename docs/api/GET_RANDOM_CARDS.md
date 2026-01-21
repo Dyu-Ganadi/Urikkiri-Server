@@ -28,27 +28,27 @@ curl -X GET "http://localhost:8080/play-together/cards" \
 {
   "cards": [
     {
-      "cardId": 1,
+      "card_id": 1,
       "word": "가람",
       "meaning": "강"
     },
     {
-      "cardId": 5,
+      "card_id": 5,
       "word": "다솜",
       "meaning": "사랑"
     },
     {
-      "cardId": 12,
+      "card_id": 12,
       "word": "미리내",
       "meaning": "은하수"
     },
     {
-      "cardId": 23,
+      "card_id": 23,
       "word": "노을",
       "meaning": "저녁 하늘의 빛"
     },
     {
-      "cardId": 8,
+      "card_id": 8,
       "word": "바람꽃",
       "meaning": "바람에 흔들리는 꽃"
     }
@@ -58,7 +58,7 @@ curl -X GET "http://localhost:8080/play-together/cards" \
 
 ### 필드 설명
 - `cards` (array): 카드 목록 (항상 5개)
-  - `cardId` (number): 카드 ID
+  - `card_id` (number): 카드 ID
   - `word` (string): 순우리말 단어
   - `meaning` (string): 단어의 뜻
 
@@ -76,8 +76,8 @@ ws.onmessage = async (event) => {
     console.log('질문:', question.content);
     
     // 2. 출제자가 아니면 카드 조회
-    const myParticipant = message.data.participants.find(p => p.userId === myUserId);
-    if (!myParticipant.isExaminer) {
+    const myParticipant = message.data.participants.find(p => p.user_id === myUserId);
+    if (!myParticipant.is_examiner) {
       const cards = await fetch('/play-together/cards', {
         headers: { 'Authorization': `Bearer ${token}` }
       }).then(res => res.json());
@@ -95,8 +95,8 @@ const selectCard = (cardId) => {
   // WebSocket으로 카드 제출
   ws.send(JSON.stringify({
     type: 'SUBMIT_CARD',
-    roomCode: roomCode,
-    cardId: cardId
+    room_code: room_code,
+    data: { card_id: cardId }
   }));
 };
 ```
@@ -107,7 +107,7 @@ const selectCard = (cardId) => {
 import { useEffect, useState } from 'react';
 
 interface Card {
-  cardId: number;
+  card_id: number;
   word: string;
   meaning: string;
 }
@@ -116,7 +116,7 @@ interface CardListResponse {
   cards: Card[];
 }
 
-const CardSelection = ({ isExaminer }: { isExaminer: boolean }) => {
+const CardSelection = ({ isExaminer }: { is_examiner: boolean }) => {
   const [cards, setCards] = useState<Card[]>([]);
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
 
@@ -142,10 +142,10 @@ const CardSelection = ({ isExaminer }: { isExaminer: boolean }) => {
     }
   };
 
-  const handleCardSelect = (cardId: number) => {
+  const handleCardSelect = (card_id: number) => {
     setSelectedCard(cardId);
     // WebSocket으로 제출
-    // ws.send(JSON.stringify({ type: 'SUBMIT_CARD', cardId }));
+    // ws.send(JSON.stringify({ type: 'SUBMIT_CARD', room_code: room_code, data: { card_id: cardId } }));
   };
 
   if (isExaminer) {
@@ -158,9 +158,9 @@ const CardSelection = ({ isExaminer }: { isExaminer: boolean }) => {
       <div className="card-grid">
         {cards.map(card => (
           <div 
-            key={card.cardId} 
-            className={`card ${selectedCard === card.cardId ? 'selected' : ''}`}
-            onClick={() => handleCardSelect(card.cardId)}
+            key={card.card_id} 
+            className={`card ${selectedCard === card.card_id ? 'selected' : ''}`}
+            onClick={() => handleCardSelect(card.card_id)}
           >
             <h4>{card.word}</h4>
             <p>{card.meaning}</p>

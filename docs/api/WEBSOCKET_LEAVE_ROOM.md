@@ -19,7 +19,7 @@
 ```json
 {
   "type": "LEAVE_ROOM",
-  "roomCode": "764185"
+  "room_code": "764185"
 }
 ```
 
@@ -32,7 +32,7 @@
 // Unity 예시
 const message = {
   type: "LEAVE_ROOM",
-  roomCode: "764185"
+  room_code: "764185"
 };
 
 ws.send(JSON.stringify(message));
@@ -47,7 +47,7 @@ ws.send(JSON.stringify(message));
 ```json
 {
   "type": "LEAVE_ROOM",
-  "roomCode": "764185",
+  "room_code": "764185",
   "message": "Successfully left the room"
 }
 ```
@@ -57,9 +57,9 @@ ws.send(JSON.stringify(message));
 ```json
 {
   "type": "LEAVE_ROOM",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "userId": 2,
+    "user_id": 2,
     "nickname": "철수",
     "remainingCount": 3
   },
@@ -74,7 +74,7 @@ ws.send(JSON.stringify(message));
 ```json
 {
   "type": "LEAVE_ROOM",
-  "roomCode": "764185",
+  "room_code": "764185",
   "message": "Successfully left the room"
 }
 ```
@@ -157,7 +157,7 @@ public class GameWebSocketManager : MonoBehaviour
     {
         var message = new {
             type = "LEAVE_ROOM",
-            roomCode = this.roomCode
+            room_code = this.roomCode
         };
 
         string json = JsonUtility.ToJson(message);
@@ -209,7 +209,7 @@ public class GameWebSocketManager : MonoBehaviour
 function leaveRoom(roomCode) {
   const message = {
     type: 'LEAVE_ROOM',
-    roomCode: roomCode
+    room_code: roomCode
   };
   
   ws.send(JSON.stringify(message));

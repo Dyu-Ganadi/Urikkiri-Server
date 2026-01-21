@@ -42,32 +42,32 @@
 ```json
 {
   "type": "GAME_START",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
     "participants": [
       {
-        "userId": 1,
+        "user_id": 1,
         "nickname": "방장",
         "level": 5
       },
       {
-        "userId": 2,
+        "user_id": 2,
         "nickname": "참가자1",
         "level": 3
       },
       {
-        "userId": 3,
+        "user_id": 3,
         "nickname": "참가자2",
         "level": 2
       },
       {
-        "userId": 4,
+        "user_id": 4,
         "nickname": "참가자3",
         "level": 7
       }
     ],
     "question": {
-      "quizId": 42,
+      "quiz_id": 42,
       "content": "가장 좋아하는 음식은?"
     }
   },
@@ -87,9 +87,9 @@ ws.onmessage = (event) => {
     displayQuestion(question.content);
     
     // 출제자 확인
-    const me = participants.find(p => p.userId === myUserId);
+    const me = participants.find(p => p.user_id === myUserId);
     
-    if (me.isExaminer) {
+    if (me.is_examiner) {
       // 출제자: 대기 화면
       showExaminerWaitingScreen();
     } else {
@@ -111,23 +111,25 @@ ws.onmessage = (event) => {
 ```json
 {
   "type": "SUBMIT_CARD",
-  "roomCode": "764185",
-  "cardId": 23
+  "room_code": "764185",
+  "data": {
+    "card_id": 23
+  }
 }
 ```
 
 ### 필드 설명
 - `type`: `"SUBMIT_CARD"` (필수)
-- `roomCode`: 방 코드 (필수)
-- `cardId`: 선택한 카드 ID (필수)
+- `room_code`: 방 코드 (필수)
+- `data.card_id`: 선택한 카드 ID (필수)
 
 ### 클라이언트 예시
 ```javascript
 const submitCard = (cardId) => {
   ws.send(JSON.stringify({
     type: 'SUBMIT_CARD',
-    roomCode: roomCode,
-    cardId: cardId
+    room_code: room_code,
+    data: { card_id: cardId }
   }));
   
   console.log('카드 제출 완료');
@@ -145,7 +147,7 @@ const submitCard = (cardId) => {
 ```json
 {
   "type": "CARD_SUBMITTED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "message": "Card submitted successfully"
 }
 ```
@@ -168,26 +170,26 @@ if (message.type === 'CARD_SUBMITTED') {
 ```json
 {
   "type": "ALL_CARDS_SUBMITTED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": [
     {
-      "participantId": 2,
+      "participant_id": 2,
       "nickname": "참가자1",
-      "cardId": 5,
+      "card_id": 5,
       "word": "다솜",
       "meaning": "사랑"
     },
     {
-      "participantId": 3,
+      "participant_id": 3,
       "nickname": "참가자2",
-      "cardId": 12,
+      "card_id": 12,
       "word": "미리내",
       "meaning": "은하수"
     },
     {
-      "participantId": 4,
+      "participant_id": 4,
       "nickname": "참가자3",
-      "cardId": 8,
+      "card_id": 8,
       "word": "바람꽃",
       "meaning": "바람에 흔들리는 꽃"
     }
@@ -216,25 +218,25 @@ if (message.type === 'ALL_CARDS_SUBMITTED') {
 ```json
 {
   "type": "EXAMINER_SELECT",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "participantId": 3
+    "participant_id": 3
   }
 }
 ```
 
 ### 필드 설명
 - `type`: `"EXAMINER_SELECT"` (필수)
-- `roomCode`: 방 코드 (필수)
-- `data.participantId`: 승자의 User ID (필수)
+- `room_code`: 방 코드 (필수)
+- `data.participant_id`: 승자의 Participant ID (필수)
 
 ### 클라이언트 예시 (출제자)
 ```javascript
 const selectWinner = (participantId) => {
   ws.send(JSON.stringify({
     type: 'EXAMINER_SELECT',
-    roomCode: roomCode,
-    data: { participantId }
+    room_code: room_code,
+    data: { participant_id: participantId }
   }));
 };
 ```
@@ -250,33 +252,33 @@ const selectWinner = (participantId) => {
 ```json
 {
   "type": "EXAMINER_SELECTED",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "participantId": 3,
-    "cardWord": "미리내",
-    "winnerNickname": "참가자2",
-    "newBananaScore": 2
+    "participant_id": 3,
+    "card_word": "미리내",
+    "winner_nickname": "참가자2",
+    "new_banana_score": 2
   },
   "message": "Examiner has selected a card"
 }
 ```
 
 ### 필드 설명
-- `participantId`: 승자의 User ID
-- `cardWord`: 선택된 카드의 단어
-- `winnerNickname`: 승자 닉네임
-- `newBananaScore`: 승자의 새로운 점수
+- `participant_id`: 승자의 Participant ID
+- `card_word`: 선택된 카드의 단어
+- `winner_nickname`: 승자 닉네임
+- `new_banana_score`: 승자의 새로운 점수
 
 ### 클라이언트 처리
 ```javascript
 if (message.type === 'EXAMINER_SELECTED') {
-  const { winnerNickname, cardWord, newBananaScore } = message.data;
+  const { winner_nickname, card_word, new_banana_score } = message.data;
   
   // 승자 발표
-  showWinnerAnnouncement(winnerNickname, cardWord, newBananaScore);
+  showWinnerAnnouncement(winner_nickname, card_word, new_banana_score);
   
   // 점수판 업데이트
-  updateScore(message.data.participantId, newBananaScore);
+  updateScore(message.data.participant_id, new_banana_score);
 }
 ```
 
@@ -291,10 +293,10 @@ if (message.type === 'EXAMINER_SELECTED') {
 ```json
 {
   "type": "NEXT_ROUND",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "newExaminerId": 4,
-    "newExaminerNickname": "참가자3",
+    "new_examiner_id": 4,
+    "new_examiner_nickname": "참가자3",
     "quiz": {
       "id": 15,
       "content": "가장 행복했던 순간은?"
@@ -305,17 +307,17 @@ if (message.type === 'EXAMINER_SELECTED') {
 ```
 
 ### 필드 설명
-- `newExaminerId`: 새 출제자의 User ID
-- `newExaminerNickname`: 새 출제자 닉네임
+- `new_examiner_id`: 새 출제자의 User ID
+- `new_examiner_nickname`: 새 출제자 닉네임
 - `quiz`: 새로운 질문
 
 ### 클라이언트 처리
 ```javascript
 if (message.type === 'NEXT_ROUND') {
-  const { newExaminerId, newExaminerNickname, quiz } = message.data;
+  const { new_examiner_id, new_examiner_nickname, quiz } = message.data;
   
   // 내가 새 출제자인지 확인
-  const isExaminer = (myUserId === newExaminerId);
+  const isExaminer = (myUserId === new_examiner_id);
   
   // 질문 표시
   displayQuestion(quiz.content);
@@ -339,37 +341,37 @@ if (message.type === 'NEXT_ROUND') {
 ```json
 {
   "type": "ROUND_END",
-  "roomCode": "764185",
+  "room_code": "764185",
   "data": {
-    "winnerNickname": "참가자2",
+    "winner_nickname": "참가자2",
     "rankings": [
       {
         "rank": 1,
-        "userId": 3,
+        "user_id": 3,
         "nickname": "참가자2",
-        "bananaScore": 5,
-        "xpReward": 20
+        "banana_score": 5,
+        "xp_reward": 20
       },
       {
         "rank": 2,
-        "userId": 2,
+        "user_id": 2,
         "nickname": "참가자1",
-        "bananaScore": 3,
-        "xpReward": 10
+        "banana_score": 3,
+        "xp_reward": 10
       },
       {
         "rank": 3,
-        "userId": 1,
+        "user_id": 1,
         "nickname": "방장",
-        "bananaScore": 2,
-        "xpReward": 5
+        "banana_score": 2,
+        "xp_reward": 5
       },
       {
         "rank": 4,
-        "userId": 4,
+        "user_id": 4,
         "nickname": "참가자3",
-        "bananaScore": 1,
-        "xpReward": 2
+        "banana_score": 1,
+        "xp_reward": 2
       }
     ]
   },
@@ -380,10 +382,10 @@ if (message.type === 'NEXT_ROUND') {
 ### 클라이언트 처리
 ```javascript
 if (message.type === 'ROUND_END') {
-  const { winnerNickname, rankings } = message.data;
+  const { winner_nickname, rankings } = message.data;
   
   // 게임 종료 화면 표시
-  showGameResult(winnerNickname, rankings);
+  showGameResult(winner_nickname, rankings);
   
   // WebSocket 연결 종료
   setTimeout(() => {
@@ -401,30 +403,30 @@ if (message.type === 'ROUND_END') {
 import { useEffect, useState } from 'react';
 
 interface Participant {
-  userId: number;
+  user_id: number;
   nickname: string;
   level: number;
   isExaminer?: boolean;
 }
 
 interface Question {
-  quizId: number;
+  quiz_id: number;
   content: string;
 }
 
 interface Card {
-  cardId: number;
+  card_id: number;
   word: string;
   meaning: string;
 }
 
 interface SubmittedCard extends Card {
-  participantId: number;
+  participant_id: number;
   nickname: string;
 }
 
 interface RoundResult {
-  participantId: number;
+  participant_id: number;
   cardWord: string;
   winnerNickname: string;
   newBananaScore: number;
@@ -434,14 +436,14 @@ interface GameResult {
   winnerNickname: string;
   rankings: Array<{
     rank: number;
-    userId: number;
+    user_id: number;
     nickname: string;
     bananaScore: number;
     xpReward: number;
   }>;
 }
 
-const GameScreen = ({ roomCode, ws }: { roomCode: string; ws: WebSocket }) => {
+const GameScreen = ({ room_code, ws }: { room_code: string; ws: WebSocket }) => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [question, setQuestion] = useState<Question | null>(null);
   const [myCards, setMyCards] = useState<Card[]>([]);
@@ -487,10 +489,10 @@ const GameScreen = ({ roomCode, ws }: { roomCode: string; ws: WebSocket }) => {
     setParticipants(data.participants);
     setQuestion(data.quiz);
     
-    const me = data.participants.find((p: Participant) => p.userId === myUserId);
-    setIsExaminer(me.isExaminer);
+    const me = data.participants.find((p: Participant) => p.user_id === myUserId);
+    setIsExaminer(me.is_examiner);
     
-    if (!me.isExaminer) {
+    if (!me.is_examiner) {
       await fetchCards();
     }
   };
@@ -517,19 +519,19 @@ const GameScreen = ({ roomCode, ws }: { roomCode: string; ws: WebSocket }) => {
     setMyCards(data.cards);
   };
 
-  const submitCard = (cardId: number) => {
+  const submitCard = (card_id: number) => {
     ws.send(JSON.stringify({
       type: 'SUBMIT_CARD',
-      roomCode: roomCode,
-      data: { cardId }
+      room_code: roomCode,
+      data: { card_id }
     }));
   };
 
-  const selectWinner = (participantId: number) => {
+  const selectWinner = (participant_id: number) => {
     ws.send(JSON.stringify({
       type: 'EXAMINER_SELECT',
-      roomCode: roomCode,
-      data: { participantId }
+      room_code: roomCode,
+      data: { participant_id }
     }));
   };
 

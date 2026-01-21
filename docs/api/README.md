@@ -184,10 +184,10 @@ ws.onmessage = (event) => {
 
 ### 2. 메시지 전송
 ```javascript
-const sendMessage = (type, roomCode, data = null) => {
+const sendMessage = (type, room_code, data = null) => {
   ws.send(JSON.stringify({
     type,
-    roomCode,
+    room_code,
     data
   }));
 };
@@ -239,7 +239,7 @@ ws.onmessage = (e) => console.log(JSON.parse(e.data));
 ws.send(JSON.stringify({ type: 'CREATE_ROOM' }));
 
 // 방 참가
-ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode: '123456' }));
+ws.send(JSON.stringify({ type: 'JOIN_ROOM', room_code: '123456' }));
 ```
 
 ---
