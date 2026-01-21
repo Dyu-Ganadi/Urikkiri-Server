@@ -35,6 +35,7 @@ public class JoinRoomService {
 
         if (!existingParticipants.isEmpty()) {
             participantRepository.deleteAll(existingParticipants);
+            participantRepository.flush();  // 삭제를 즉시 DB에 반영
         }
 
         // 3. 방이 꽉 찼는지 확인

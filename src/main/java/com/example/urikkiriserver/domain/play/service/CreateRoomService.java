@@ -33,6 +33,7 @@ public class CreateRoomService {
 
         if (!existingParticipants.isEmpty()) {
             participantRepository.deleteAll(existingParticipants);
+            participantRepository.flush();  // 삭제를 즉시 DB에 반영
         }
 
         // 2. 새 방 생성
