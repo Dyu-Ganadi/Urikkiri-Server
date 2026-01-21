@@ -793,6 +793,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
             var participant = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), user.getId())
                     .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
 
+            // 나간 사용자가 출제자였는지 확인
+            boolean wasExaminer = participant.isExaminer();
+
             // Participant 삭제 (roomCode와 participantId로 특정 유저만 삭제)
             participantRepository.delete(participant);
 
@@ -812,6 +815,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
             var remainingParticipants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
 
             if (!remainingParticipants.isEmpty()) {
+                // 나간 사용자가 출제자였다면 새로운 출제자 선정
+                if (wasExaminer) {
+                    var newExaminer = remainingParticipants.get(0);
+                    newExaminer.setExaminer(true);
+                    participantRepository.save(newExaminer);
+                    log.info("New examiner selected in room {}: {}", roomCode, newExaminer.getUserId().getNickname());
+                }
+
                 // 남은 참가자들에게 알림
                 var exitNotification = UserExitDto.of(
                         user.getId(),
