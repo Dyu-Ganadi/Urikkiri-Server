@@ -178,7 +178,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
             log.info("User {} joined room {} (total: {})",
                     user.getNickname(), roomCode, joinRoomResponse.participants().size());
 
-            // 4명이 모이면 3초 후에 게임 준비 완료 알림 전송 (Unity가 재연결해야 함)
+            // 4명이 모이면 3초 후에 게임 준비 완료 알림 전송
+            // Unity는 별도의 WebSocket 연결을 생성하여 CONNECT_GAME으로 연결
             if (joinRoomResponse.participants().size() == 4) {
                 log.info("Room {} is now full. Will notify clients to launch Unity game in 3 seconds...", roomCode);
 
@@ -219,8 +220,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * 클라이언트가 게임 서버로 연결하는 핸들러
-     * GAME_READY 받은 후 클라이언트가 다시 토큰+방코드로 연결
+     * Unity 게임이 게임 서버로 연결하는 핸들러
+     * GAME_READY를 받은 후 Unity가 별도의 WebSocket 연결로 토큰+방코드를 보냄
+     * 로비 연결과는 독립적인 게임 세션 연결
      */
     private void handleConnectGame(WebSocketSession session, User user, String roomCode) {
         if (roomCode == null || roomCode.isEmpty()) {
@@ -239,8 +241,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // 게임 세션에 추가
             sessionManager.addGameSession(roomCode, session);
 
-            log.info("User {} connected to game server for room {} ({}/4)",
-                    user.getNickname(), roomCode, sessionManager.getGameSessionsByRoom(roomCode).size());
+            log.info("User {} (ID: {}) connected to game server for room {} - isExaminer: {}, session open: {}, ({}/4)",
+                    user.getNickname(), user.getId(), roomCode, participant.isExaminer(),
+                    session.isOpen(), sessionManager.getGameSessionsByRoom(roomCode).size());
 
             // 게임 세션에 4명이 모두 연결되었는지 확인
             var gameSessions = sessionManager.getGameSessionsByRoom(roomCode);
@@ -369,21 +372,70 @@ public class WebSocketHandler extends TextWebSocketHandler {
                         .findFirst()
                         .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
 
+                log.info("Found examiner: {} (User ID: {})", examiner.getUserId().getNickname(), examiner.getUserId().getId());
+
                 // 출제자의 게임 세션 찾기
-                var examinerSession = sessionManager.getGameSessionsByRoom(roomCode).stream()
+                var gameSessions = sessionManager.getGameSessionsByRoom(roomCode);
+                log.info("Total game sessions in room {}: {}", roomCode, gameSessions.size());
+
+                // 끊어진 세션 필터링 및 정리
+                var activeGameSessions = gameSessions.stream()
+                        .filter(s -> {
+                            if (!s.isOpen()) {
+                                log.warn("Found closed session in room {}. Removing...", roomCode);
+                                sessionManager.removeSession(roomCode, s);
+                                return false;
+                            }
+                            return true;
+                        })
+                        .toList();
+
+                log.info("Active game sessions in room {}: {}", roomCode, activeGameSessions.size());
+
+                var examinerSession = activeGameSessions.stream()
                         .filter(s -> {
                             User sessionUser = (User) s.getAttributes().get("userPrincipal");
-                            return sessionUser != null && sessionUser.getId().equals(examiner.getUserId().getId());
+                            if (sessionUser != null) {
+                                log.info("Checking session for user: {} (ID: {}), isOpen: {}",
+                                        sessionUser.getNickname(), sessionUser.getId(), s.isOpen());
+                                return sessionUser.getId().equals(examiner.getUserId().getId());
+                            }
+                            log.warn("Session with null userPrincipal found in room {}", roomCode);
+                            return false;
                         })
                         .findFirst();
 
                 // 출제자에게만 제출된 카드 목록 전송
-                examinerSession.ifPresent(s -> sendMessage(s, WebSocketMessage.withData(
-                        WebSocketMessageType.ALL_CARDS_SUBMITTED,
-                        roomCode,
-                        allSubmittedCards,
-                        "All cards have been submitted"
-                )));
+                if (examinerSession.isPresent()) {
+                    var examinerSess = examinerSession.get();
+                    log.info("Sending ALL_CARDS_SUBMITTED to examiner: {} (session open: {})",
+                            examiner.getUserId().getNickname(), examinerSess.isOpen());
+
+                    try {
+                        sendMessage(examinerSess, WebSocketMessage.withData(
+                                WebSocketMessageType.ALL_CARDS_SUBMITTED,
+                                roomCode,
+                                allSubmittedCards,
+                                "All cards have been submitted"
+                        ));
+                        log.info("Successfully sent ALL_CARDS_SUBMITTED to examiner");
+                    } catch (Exception e) {
+                        log.error("Failed to send message to examiner: {}", e.getMessage());
+                        // 세션이 실제로 끊어진 경우 정리
+                        sessionManager.removeSession(roomCode, examinerSess);
+                    }
+                } else {
+                    log.error("Examiner session not found for user {} (ID: {}) in room {}. Active sessions: {}",
+                            examiner.getUserId().getNickname(), examiner.getUserId().getId(), roomCode, activeGameSessions.size());
+
+                    // 디버깅: 현재 활성 세션의 모든 유저 출력
+                    activeGameSessions.forEach(s -> {
+                        User sessionUser = (User) s.getAttributes().get("userPrincipal");
+                        if (sessionUser != null) {
+                            log.error("Available session - User: {} (ID: {})", sessionUser.getNickname(), sessionUser.getId());
+                        }
+                    });
+                }
             }
 
         } catch (UrikkiriException e) {
@@ -601,10 +653,25 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void sendMessage(WebSocketSession session, WebSocketMessage message) {
         try {
+            // 세션이 열려있는지 확인
+            if (!session.isOpen()) {
+                User user = (User) session.getAttributes().get("userPrincipal");
+                log.warn("Attempted to send message to closed session for user: {}",
+                        user != null ? user.getNickname() : "Unknown");
+                return;
+            }
+
             String json = objectMapper.writeValueAsString(message);
             session.sendMessage(new TextMessage(json));
+
+            // 성공 로그 (디버깅용)
+            User user = (User) session.getAttributes().get("userPrincipal");
+            log.debug("Message sent successfully to user: {} (type: {})",
+                    user != null ? user.getNickname() : "Unknown", message.type());
         } catch (IOException e) {
-            log.error("Error sending WebSocket message", e);
+            User user = (User) session.getAttributes().get("userPrincipal");
+            log.error("Error sending WebSocket message to user: {} (type: {}). Error: {}",
+                    user != null ? user.getNickname() : "Unknown", message.type(), e.getMessage());
         }
     }
 
