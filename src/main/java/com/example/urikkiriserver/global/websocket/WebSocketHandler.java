@@ -493,8 +493,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
-            // 선택된 참가자 조회
-            var winner = participantRepository.findByRoomIdIdAndUserIdId(room.getId(), selectedParticipantId)
+            // 선택된 참가자 조회 (participantId로 직접 조회)
+            var winner = participantRepository.findByIdWithUser(selectedParticipantId)
                     .orElseThrow(() -> ParticipantNotFoundException.EXCEPTION);
 
             // 승자의 bananaScore 증가
