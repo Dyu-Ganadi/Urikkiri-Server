@@ -13,7 +13,7 @@ public class GameRoundManager {
     // roomCode -> List<SubmittedCardInfo> (현재 제출된 카드들)
     private final Map<String, List<SubmittedCardInfo>> submittedCards = new ConcurrentHashMap<>();
 
-    // roomCode -> List<Long> (출제자였던 participantId 히스토리)
+    // roomCode -> List<Long> (출제자였던 userId 히스토리)
     private final Map<String, List<Long>> examinerHistory = new ConcurrentHashMap<>();
 
     // roomCode -> 게임 시작 여부

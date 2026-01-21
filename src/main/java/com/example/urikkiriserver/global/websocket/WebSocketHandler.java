@@ -513,7 +513,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // 모든 참가자에게 출제자의 선택 알림
             var selectionDto = ExaminerSelectionDto.of(
-                    selectedParticipantId,
+                    winner.getUserId().getId(),
                     winnerCard.word(),
                     winner.getUserId().getNickname(),
                     winner.getBananaScore()

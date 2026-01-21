@@ -4,14 +4,14 @@ import lombok.Builder;
 
 @Builder
 public record ExaminerSelectionDto(
-        Long participantId,
+        Long userId,
         String cardWord,
         String winnerNickname,
         int newBananaScore
 ) {
-    public static ExaminerSelectionDto of(Long participantId, String cardWord, String winnerNickname, int newBananaScore) {
+    public static ExaminerSelectionDto of(Long userId, String cardWord, String winnerNickname, int newBananaScore) {
         return ExaminerSelectionDto.builder()
-                .participantId(participantId)
+                .userId(userId)
                 .cardWord(cardWord)
                 .winnerNickname(winnerNickname)
                 .newBananaScore(newBananaScore)

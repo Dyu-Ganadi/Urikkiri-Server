@@ -13,7 +13,7 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
     boolean existsByRoomIdIdAndUserIdId(Long roomId, Long userId);
 
     @Query("SELECT p FROM Participant p JOIN FETCH p.userId WHERE p.id = :participantId")
-    Optional<Participant> findByIdWithUser(@Param("participantId") Long participantId);
+    Optional<Participant> findByIdWithUser(@Param("userId") Long participantId);
 
     @Query("SELECT p FROM Participant p JOIN FETCH p.userId WHERE p.roomId.id = :roomId AND p.userId.id = :userId")
     Optional<Participant> findByRoomIdIdAndUserIdId(@Param("roomId") Long roomId, @Param("userId") Long userId);

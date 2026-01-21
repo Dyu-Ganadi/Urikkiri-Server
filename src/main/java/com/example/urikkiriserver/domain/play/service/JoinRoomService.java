@@ -37,7 +37,6 @@ public class JoinRoomService {
 
         if (!existingParticipants.isEmpty()) {
             participantRepository.deleteAll(existingParticipants);
-            participantRepository.flush();  // 삭제를 즉시 DB에 반영
         }
 
         // 3. 방이 꽉 찼는지 확인
@@ -55,11 +54,6 @@ public class JoinRoomService {
                     .bananaScore(0)
                     .isExaminer(true)
                     .build());
-
-            // 즉시 DB에 반영 (중요: 다른 트랜잭션에서 즉시 조회 가능하도록)
-            participantRepository.flush();
-
-            log.info("Room {} and participant flushed to DB", roomCode);
 
             // 6. 방장 정보를 포함한 참가자 목록 생성
             List<ParticipantInfo> participants = List.of(
@@ -82,16 +76,14 @@ public class JoinRoomService {
             .isExaminer(false)
             .build());
 
-        // 즉시 DB에 반영 (중요: 다른 트랜잭션에서 즉시 조회 가능하도록)
-        participantRepository.flush();
-
-        log.info("Participant for user {} in room {} flushed to DB", user.getNickname(), roomCode);
-
         // 6. 전체 참가자 목록 조회 (User를 Eager Fetch)
         List<ParticipantInfo> participants = participantRepository.findAllByRoomIdIdWithUser(room.getId())
             .stream()
             .map(ParticipantInfo::from)
             .toList();
+
+        // db에 반영
+        participantRepository.flush();
 
         return JoinRoomResponse.of(room, participants);
     }
