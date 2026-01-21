@@ -15,8 +15,6 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
     @Query("SELECT p FROM Participant p JOIN FETCH p.userId WHERE p.roomId.id = :roomId AND p.userId.id = :userId")
     Optional<Participant> findByRoomIdIdAndUserIdId(@Param("roomId") Long roomId, @Param("userId") Long userId);
 
-    List<Participant> findAllByRoomIdId(Long roomId);
-
     int countByRoomIdId(Long roomId);
 
 
