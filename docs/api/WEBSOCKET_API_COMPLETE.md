@@ -598,28 +598,24 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
     "rankings": [
       {
         "user_id": 3,
-        "nickname": "친구1",
         "finalScore": 5,
         "rank": 1,
         "xp_reward": 20
       },
       {
         "user_id": 2,
-        "nickname": "나",
         "finalScore": 3,
         "rank": 2,
         "xp_reward": 10
       },
       {
         "user_id": 1,
-        "nickname": "방장",
         "finalScore": 2,
         "rank": 3,
         "xp_reward": 5
       },
       {
         "user_id": 4,
-        "nickname": "친구2",
         "finalScore": 1,
         "rank": 4,
         "xp_reward": 2
@@ -776,7 +772,6 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```java
 {
   "user_id": Long,
-  "nickname": String,
   "level": Integer,
   "is_examiner": Boolean
 }
@@ -844,7 +839,6 @@ Unity 게임이 사용하는 WebSocket API입니다. 게임 플레이 전용입�
 ```java
 {
   "user_id": Long,
-  "nickname": String,
   "finalScore": Integer,
   "rank": Integer,
   "xp_reward": Integer

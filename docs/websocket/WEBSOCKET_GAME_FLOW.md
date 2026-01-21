@@ -174,21 +174,18 @@ if (message.type === 'CARD_SUBMITTED') {
   "data": [
     {
       "participant_id": 2,
-      "nickname": "참가자1",
       "card_id": 5,
       "word": "다솜",
       "meaning": "사랑"
     },
     {
       "participant_id": 3,
-      "nickname": "참가자2",
       "card_id": 12,
       "word": "미리내",
       "meaning": "은하수"
     },
     {
       "participant_id": 4,
-      "nickname": "참가자3",
       "card_id": 8,
       "word": "바람꽃",
       "meaning": "바람에 흔들리는 꽃"

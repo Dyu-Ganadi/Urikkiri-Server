@@ -311,10 +311,6 @@ gameWs.SendText(JsonUtility.ToJson(new {
   "type": "ROUND_END",
   "data": {
     "rankings": [
-      { "user_id": 2, "nickname": "플레이어2", "finalScore": 5, "rank": 1, "xp_reward": 20 },
-      { "user_id": 3, "nickname": "플레이어3", "finalScore": 3, "rank": 2, "xp_reward": 10 },
-      { "user_id": 1, "nickname": "플레이어1", "finalScore": 2, "rank": 3, "xp_reward": 5 },
-      { "user_id": 4, "nickname": "플레이어4", "finalScore": 1, "rank": 4, "xp_reward": 2 }
     ]
   }
 }
