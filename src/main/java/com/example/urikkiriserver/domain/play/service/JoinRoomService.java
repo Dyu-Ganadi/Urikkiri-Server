@@ -36,9 +36,7 @@ public class JoinRoomService {
                 .toList();
 
         if (!existingParticipants.isEmpty()) {
-            for (Participant existingParticipant : existingParticipants) {
-                participantRepository.delete(existingParticipant);
-            }
+            participantRepository.deleteAll(existingParticipants);
         }
 
         // 3. 방이 꽉 찼는지 확인
