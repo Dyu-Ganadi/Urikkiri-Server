@@ -17,4 +17,12 @@ public record SubmittedCardInfo(
                 card.getMeaning()
         );
     }
+    public static SubmittedCardInfo of(long participantId, Card card) {
+        return new SubmittedCardInfo(
+                participantId,
+                card.getId(),
+                card.getWord(),
+                card.getMeaning()
+        );
+    }
 }
