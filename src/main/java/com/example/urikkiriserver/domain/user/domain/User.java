@@ -35,6 +35,6 @@ public class User {
     }
 
     private void updateLevel() {
-        this.bananaxp = this.bananaxp / 10;
+        this.level = this.bananaxp / 10;
     }
 }
