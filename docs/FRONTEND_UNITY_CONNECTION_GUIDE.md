@@ -38,12 +38,13 @@
   "roomCode": "123456",
   "data": {
     "participants": [...]
+  },
   }
-}
 ```
 
-### 3단계: Unity 게임 실행
+### 3단계: Unity 게임 실행 (로비 연결 유지)
 ```
+프론트엔드: 로비 WebSocket 연결 유지
 프론트엔드: Unity 게임 실행
 프론트엔드 → Unity: 토큰 + 방코드 전달
 ```
@@ -51,40 +52,36 @@
 **프론트엔드 코드:**
 ```javascript
 if (message.type === 'GAME_READY') {
+    console.log('게임 준비 완료! Unity 게임을 실행합니다...');
+    
+    // ⚠️ lobbyWs는 닫지 않고 유지!
     launchUnityGame({
         token: localStorage.getItem('accessToken'),
         roomCode: message.roomCode,
         serverUrl: 'ws://localhost:8080/ws'  // 같은 서버
     });
-    // ⚠️ lobbyWs는 닫지 않고 유지!
+}
+
+### 4단계: Unity가 서버에 새 WebSocket 연결 (로비와 별개)
+```
+Unity → 서버: 새로운 WebSocket 연결 (토큰 사용)
+Unity → 서버: CONNECT_GAME (방코드)
+Unity ← 서버: 연결 확인
+```
+
+**Unity가 보내는 CONNECT_GAME 메시지:**
+```json
+{
+  "type": "CONNECT_GAME",
+  "roomCode": "123456"
 }
 ```
 
-### 4단계: Unity가 서버에 새 연결
-```
-Unity → 서버: 새로운 WebSocket 연결 (토큰)
-Unity → 서버: CONNECT_GAME (방코드)
-서버: 토큰으로 유저 확인 → 게임 세션에 추가
-```
+**중요**: Unity는 **프론트엔드와 별개의 WebSocket 연결**을 만듭니다. 같은 서버 URL을 사용하지만 완전히 독립적인 세션입니다.
 
-**Unity 코드:**
-```csharp
-// 1. 새 WebSocket 연결
-websocket = new WebSocket($"{serverUrl}?token={token}");
-
-websocket.OnOpen += () =>
-{
-    // 2. CONNECT_GAME 전송
-    websocket.SendText(JsonUtility.ToJson(new {
-        type = "CONNECT_GAME",
-        roomCode = roomCode
-    }));
-};
+### 5단계: 4명 모두 Unity 연결 완료 → 게임 시작
 ```
-
-### 5단계: 4명 모두 Unity 연결 → GAME_START
-```
-[4명의 Unity가 모두 CONNECT_GAME]
+[마지막 플레이어 Unity 연결]
 모든 Unity ← 서버: GAME_START (질문 포함)
 ```
 

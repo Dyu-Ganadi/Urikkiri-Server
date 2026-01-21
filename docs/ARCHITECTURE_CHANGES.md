@@ -23,12 +23,13 @@
 
 ### 현재 (v2.0)
 ```
-클라이언트 → 로비 WebSocket 연결 → 방 생성/참여 → 4명 모임 
+클라이언트 → 로비 WebSocket 연결 (유지) → 방 생성/참여 → 4명 모임 
     → GAME_READY 수신 
-    → 게임 WebSocket 재연결 (CONNECT_GAME)
+    → Unity가 별도의 WebSocket 연결 생성 (CONNECT_GAME)
     → 모든 플레이어 연결 확인
     → GAME_START
 ```
+**중요**: 로비 연결은 유지되고, Unity는 별도의 새로운 연결을 생성합니다.
 
 ---
 
@@ -45,8 +46,7 @@ public enum ClientType {
 ### 2. `GameReadyData.java`
 4명이 모였을 때 클라이언트에게 전달되는 데이터
 - 참가자 목록
-- 게임 서버 URL
-- 재연결 안내 메시지
+- Unity 게임 실행 안내 메시지
 
 ### 3. `GAME_CONNECTION_FLOW.md`
 완전한 연결 플로우와 클라이언트 구현 가이드
@@ -139,13 +139,14 @@ public enum ClientType {
 - **로비 세션**: 방 생성/참여, 대기 중인 플레이어 관리
 - **게임 세션**: 실제 게임 플레이, 카드 제출, 점수 관리
 
-### 재연결 프로세스
+### 별도 연결 프로세스
 1. 로비에서 4명이 모이면 `GAME_READY` 수신
-2. 클라이언트가 로비 연결을 닫음
-3. 게임 서버 URL로 새로운 WebSocket 연결
-4. `CONNECT_GAME` 메시지로 방 코드 전달
-5. 서버가 로비 세션 → 게임 세션으로 전환
-6. 모든 플레이어 연결 확인 후 `GAME_START`
+2. 프론트엔드는 로비 연결 유지 (닫지 않음!)
+3. Unity 게임을 실행하고 토큰+방코드 전달
+4. Unity가 게임 서버 URL로 **새로운** WebSocket 연결 생성
+5. Unity가 `CONNECT_GAME` 메시지로 방 코드 전달
+6. 서버가 게임 세션에 추가
+7. 모든 플레이어 연결 확인 후 `GAME_START`
 
 ### 브로드캐스트 타겟 변경
 - **로비 메시지**: `sessionManager.getLobbySessionsByRoom(roomCode)`
@@ -182,25 +183,23 @@ class GameClient {
             const message = JSON.parse(event.data);
             
             if (message.type === 'GAME_READY') {
-                const roomCode = message.roomCode;
-                
                 // 로비 연결 유지 (닫지 않음!)
                 // Unity 게임에 토큰과 방코드 전달
-                this.launchUnityGame(token, roomCode);
+                this.launchUnityGame(token, message.roomCode);
             }
         };
     }
-    
+
     // Unity 게임 실행
     launchUnityGame(token: string, roomCode: string) {
         // Unity 게임에 토큰과 방코드 전달
         if (window.unityInstance) {
-            unityInstance.SendMessage('GameManager', 'ConnectToServer', 
+            unityInstance.SendMessage('GameManager', 'ConnectToServer',
                 JSON.stringify({
                     token: token,
+                    roomCode: message.roomCode,
+                    participants: message.data.participants
                     roomCode: roomCode,
-                    serverUrl: 'ws://localhost:8080/ws'
-                })
             );
         }
     }
@@ -231,8 +230,9 @@ class GameClient {
 **기존 클라이언트가 해야 할 변경사항:**
 
 1. `GAME_START` 대신 `GAME_READY` 핸들링 추가
-2. `GAME_READY` 수신 시 재연결 로직 구현
-3. `CONNECT_GAME` 메시지 전송 로직 추가
+2. `GAME_READY` 수신 시 로비 연결 유지하고 Unity 게임 실행
+3. Unity에서 별도의 WebSocket 연결 생성
+4. Unity가 `CONNECT_GAME` 메시지 전송
 
 ---
 

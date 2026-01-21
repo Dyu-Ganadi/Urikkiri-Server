@@ -233,20 +233,47 @@ Unity 게임 ─┘
 **프론트엔드 처리**:
 ```javascript
 if (message.type === 'GAME_READY') {
+    console.log('게임 준비 완료! Unity 게임을 실행합니다...');
+    
+    // ⚠️ 로비 WebSocket 연결은 유지 (닫지 않음!)
+    
     // Unity 게임 실행
     launchUnityGame({
         token: localStorage.getItem('accessToken'),
         roomCode: message.roomCode,
-        serverUrl: 'ws://localhost:8080/ws'
+        serverUrl: 'ws://localhost:8080/ws',
+        participants: message.data.participants
     });
-    
-    // ⚠️ 로비 WebSocket 연결은 유지!
 }
 ```
 
 ---
 
-### 7. ROOM_EXIT - 방 나가기
+## 6. CONNECT_GAME (Unity → 서버)
+
+**방향**: Unity 게임 → 서버
+
+**설명**: Unity 게임 클라이언트가 게임 서버에 연결할 때 보내는 메시지입니다. 프론트엔드에서 받은 방코드를 전달합니다.
+
+**요청**:
+```json
+{
+  "type": "CONNECT_GAME",
+  "roomCode": "764185"
+}
+```
+
+**Unity C# 예시**:
+```csharp
+websocket.OnOpen += () => {
+    var msg = new { type = "CONNECT_GAME", roomCode = currentRoomCode };
+    websocket.SendText(JsonUtility.ToJson(msg));
+};
+```
+
+---
+
+## 7. ROOM_EXIT (프론트엔드 → 서버)
 
 **방향**: 프론트엔드 → 서버
 

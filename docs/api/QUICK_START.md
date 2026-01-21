@@ -148,6 +148,9 @@ ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
     
     if (message.type === 'GAME_READY') {
+        console.log('게임 준비 완료! Unity 게임을 실행합니다...');
+        
+        // ⚠️ 로비 연결은 유지 (닫지 않음!)
         // Unity 게임 실행!
         launchUnityGame({
             token: token,
@@ -156,13 +159,42 @@ ws.onmessage = (event) => {
         });
     }
 };
+
+function launchUnityGame(config) {
+    // Unity에 설정 전달
+    if (window.unityInstance) {
+        unityInstance.SendMessage('GameManager', 'ConnectToServer', JSON.stringify(config));
+    }
+}
 ```
 
----
+### Unity: 게임 서버에 새로운 WebSocket 연결
 
-## 6단계: Unity 게임 연결 (30초)
+Unity가 별도의 WebSocket 연결을 생성합니다:
 
-### Unity: 새 WebSocket 연결
+```csharp
+// Unity C# 코드
+public void ConnectToServer(string configJson) {
+    var config = JsonUtility.FromJson<ServerConfig>(configJson);
+    StartCoroutine(ConnectToGameServer(config));
+}
+
+IEnumerator ConnectToGameServer(ServerConfig config) {
+    websocket = new WebSocket($"{config.serverUrl}?token={config.token}");
+    
+    websocket.OnOpen += () => {
+        Debug.Log("✅ 게임 서버 연결 성공");
+        
+        // CONNECT_GAME 전송
+        var msg = new { type = "CONNECT_GAME", roomCode = config.roomCode };
+        websocket.SendText(JsonUtility.ToJson(msg));
+    };
+    
+    yield return websocket.Connect();
+}
+```
+
+### 서버: 모든 Unity 연결 완료 → GAME_START
 
 ```csharp
 // 프론트엔드에서 받은 설정
@@ -176,7 +208,7 @@ gameWs.OnOpen += () => {
     // CONNECT_GAME 전송
     var connectMsg = new {
         type = "CONNECT_GAME",
-        roomCode = roomCode
+## 6단계: Unity 게임 연결 (30초)
     };
     gameWs.SendText(JsonUtility.ToJson(connectMsg));
 };
@@ -196,7 +228,7 @@ gameWs.OnOpen += () => {
       "content": "가장 좋아하는 음식은?"
     }
   }
-}
+### Unity: 새 WebSocket 연결
 ```
 
 ---

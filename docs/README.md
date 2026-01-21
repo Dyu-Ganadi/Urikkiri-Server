@@ -254,8 +254,8 @@ docs/
 **Q: 로비 연결을 닫아야 하나요?**  
 A: 아니요! [프론트엔드-Unity 연결](FRONTEND_UNITY_CONNECTION_GUIDE.md#3-프론트엔드-연결-유지) 참조
 
-**Q: Unity가 재연결해야 하나요?**  
-A: 네! [게임 연결 플로우](api/GAME_CONNECTION_FLOW.md#3단계-unity-게임-서버-연결) 참조
+**Q: Unity가 별도로 연결해야 하나요?**  
+A: 네! 로비 연결을 유지하고 Unity는 새로운 WebSocket 연결을 생성합니다. [게임 연결 플로우](api/GAME_CONNECTION_FLOW.md#3단계-unity-게임-서버-연결) 참조
 
 **Q: 같은 유저인 걸 어떻게 인식하나요?**  
 A: 토큰으로! [유저 경험 플로우](USER_EXPERIENCE_FLOW.md#-서버가-같은-유저임을-인식하는-방법) 참조

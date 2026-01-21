@@ -523,9 +523,9 @@ document.getElementById('joinRoomBtn').onclick = () => {
 - 4명 모이면 바로 GAME_START
 
 ### 현재 (분리된 연결)
-- WebSocket 1: 로비 연결 (방 생성/참여)
-- WebSocket 2: 게임 연결 (실제 플레이)
-- 4명 모이면 GAME_READY → 클라이언트 재연결 → 모두 연결되면 GAME_START
+- WebSocket 1: 로비 연결 (방 생성/참여) - **유지됨**
+- WebSocket 2: Unity 게임 연결 (실제 플레이) - **새로 생성**
+- 4명 모이면 GAME_READY → Unity가 별도 연결 생성 (CONNECT_GAME) → 모두 연결되면 GAME_START
 
 ---
 
