@@ -161,6 +161,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         try {
             // JoinRoomService를 통해 방 참가 로직 실행 및 참가자 목록 반환
+            // (기존 방에서 자동으로 제거하는 로직 포함)
             var joinRoomResponse = joinRoomService.execute(roomCode, user);
 
             // 세션을 방에 추가 (로비 세션으로)

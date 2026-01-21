@@ -4,7 +4,6 @@ import com.example.urikkiriserver.domain.play.domain.Participant;
 import com.example.urikkiriserver.domain.play.domain.Room;
 import com.example.urikkiriserver.domain.play.domain.repository.ParticipantRepository;
 import com.example.urikkiriserver.domain.play.domain.repository.RoomRepository;
-import com.example.urikkiriserver.domain.play.exception.AlreadyInRoomException;
 import com.example.urikkiriserver.domain.play.exception.RoomAlreadyFullException;
 import com.example.urikkiriserver.domain.play.exception.RoomNotFoundException;
 import com.example.urikkiriserver.domain.play.presentation.dto.response.JoinRoomResponse;
@@ -31,9 +30,15 @@ public class JoinRoomService {
         Room room = roomRepository.findByCode(roomCode)
             .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
 
-        // 2. 사용자가 이미 해당 방에 참가중인지 확인
-        if (participantRepository.existsByRoomIdIdAndUserIdId(room.getId(), user.getId())) {
-            throw AlreadyInRoomException.EXCEPTION;
+        // 2. 사용자가 이미 다른 방에 참가 중인 경우 자동으로 제거
+        List<Participant> existingParticipants = participantRepository.findAll().stream()
+                .filter(p -> p.getUserId().getId().equals(user.getId()))
+                .toList();
+
+        if (!existingParticipants.isEmpty()) {
+            for (Participant existingParticipant : existingParticipants) {
+                participantRepository.delete(existingParticipant);
+            }
         }
 
         // 3. 방이 꽉 찼는지 확인
