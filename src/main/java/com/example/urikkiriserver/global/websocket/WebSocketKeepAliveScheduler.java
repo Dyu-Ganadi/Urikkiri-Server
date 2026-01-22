@@ -20,7 +20,6 @@ public class WebSocketKeepAliveScheduler {
 
     @Scheduled(fixedRate = 10000) // 10초마다 실행
     public void sendKeepAlive() {
-        log.info("Sending KEEPALIVE to all WebSocket clients");
         // 로비 세션들에게 전송
         Set<WebSocketSession> lobbySessions = sessionManager.getAllLobbySessions();
         sendToSessions(lobbySessions, "Lobby");
@@ -32,8 +31,6 @@ public class WebSocketKeepAliveScheduler {
 
     private void sendToSessions(Set<WebSocketSession> sessions, String type) {
         if (sessions.isEmpty()) return;
-
-        log.debug("Sending KEEPALIVE to {} sessions (Type: {})", sessions.size(), type);
         
         sessions.forEach(session -> {
             if (session.isOpen()) {
