@@ -2,6 +2,7 @@ package com.example.urikkiriserver.global.websocket;
 
 import com.example.urikkiriserver.domain.card.domain.repository.CardRepository;
 import com.example.urikkiriserver.domain.card.exception.CardNotFoundException;
+import com.example.urikkiriserver.domain.card.presentation.dto.response.CardResponse;
 import com.example.urikkiriserver.domain.play.domain.Participant;
 import com.example.urikkiriserver.domain.play.domain.repository.ParticipantRepository;
 import com.example.urikkiriserver.domain.play.domain.repository.RoomRepository;
@@ -553,7 +554,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // 모든 참가자에게 출제자의 선택 알림
             var selectionDto = ExaminerSelectionDto.of(
                     winner.getUserId().getId(),
-                    winnerCard.word(),
+                    winnerCard,
                     winner.getUserId().getNickname(),
                     winner.getBananaScore()
             );
