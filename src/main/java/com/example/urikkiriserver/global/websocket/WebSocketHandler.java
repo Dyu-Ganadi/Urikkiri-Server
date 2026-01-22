@@ -385,12 +385,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     gameRoundManager.getSubmittedCount(roomCode));
 
             // 1. 제출 확인용 메시지
-            var gameStartData = SubmittedCardInfo.of(user.getId(), card);
+            var submittedCardData = SubmittedCardInfo.of(user.getId(), card);
 
             var cardSubmittedMessage = WebSocketMessage.withData(
                     WebSocketMessageType.CARD_SUBMITTED,
                     roomCode,
-                    gameStartData,
+                    submittedCardData,
                     "Card submitted successfully"
             );
             sessionManager.getGameSessionsByRoom(roomCode)
