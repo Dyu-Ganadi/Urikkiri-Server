@@ -852,6 +852,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     "Successfully left the room"
             ));
 
+            // 로비 세션이 있다면 게임 종료 메시지 전송
+            sessionManager.getLobbySessionsByRoom(roomCode).stream()
+                    .filter(s -> {
+                        User sessionUser = (User) s.getAttributes().get("userPrincipal");
+                        return sessionUser != null && sessionUser.getId().equals(user.getId());
+                    }).findFirst().ifPresent(webSocketSession -> sendMessage(webSocketSession, WebSocketMessage.of(
+                    WebSocketMessageType.ROOM_EXIT,
+                    roomCode,
+                    "Game has been Successfully Ended"
+            )));
+
             // 2. 남은 참가자 확인
             var remainingParticipants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
 
