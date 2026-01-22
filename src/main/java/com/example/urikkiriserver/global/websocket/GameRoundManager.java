@@ -19,21 +19,37 @@ public class GameRoundManager {
     // roomCode -> 게임 시작 여부
     private final Map<String, Boolean> gameStarted = new ConcurrentHashMap<>();
 
+    // roomCode -> 제출 시도 횟수 (null 카드 포함)
+    private final Map<String, Integer> submissionAttempts = new ConcurrentHashMap<>();
+
     public void startGame(String roomCode) {
         gameStarted.put(roomCode, true);
         submittedCards.put(roomCode, Collections.synchronizedList(new ArrayList<>()));
         examinerHistory.put(roomCode, Collections.synchronizedList(new ArrayList<>()));
+        submissionAttempts.put(roomCode, 0);
     }
 
     public void clearSubmittedCards(String roomCode) {
         // 다음 턴 시작 시 제출된 카드 초기화
         submittedCards.put(roomCode, Collections.synchronizedList(new ArrayList<>()));
+        submissionAttempts.put(roomCode, 0);
     }
 
     public void endGame(String roomCode) {
         gameStarted.remove(roomCode);
         submittedCards.remove(roomCode);
         examinerHistory.remove(roomCode);
+        submissionAttempts.remove(roomCode);
+    }
+
+    // 제출 시도 증가 (null 카드 포함)
+    public void incrementSubmissionAttempt(String roomCode) {
+        submissionAttempts.merge(roomCode, 1, Integer::sum);
+    }
+
+    // 제출 시도 횟수 조회
+    public int getSubmissionAttempts(String roomCode) {
+        return submissionAttempts.getOrDefault(roomCode, 0);
     }
 
     // 카드 제출
@@ -51,9 +67,9 @@ public class GameRoundManager {
         return submittedCards.getOrDefault(roomCode, Collections.emptyList()).size();
     }
 
-    // 3명이 모두 제출했는지 확인 (출제자 제외)
+    // 3명이 모두 제출했는지 확인 (출제자 제외, null 포함)
     public boolean isAllCardsSubmitted(String roomCode) {
-        return getSubmittedCount(roomCode) >= 3;
+        return getSubmissionAttempts(roomCode) >= 3;
     }
 
     public boolean isGameStarted(String roomCode) {

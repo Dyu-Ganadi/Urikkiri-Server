@@ -329,20 +329,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             @SuppressWarnings("unchecked")
             Map<String, Object> data = objectMapper.convertValue(wsMessage.data(), Map.class);
 
-            if (data == null || !data.containsKey("card_id")) {
-                log.error("Invalid SUBMIT_CARD message. data: {}", wsMessage.data());
-                sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
-                return;
-            }
-
-            Long cardId = ((Number) data.get("card_id")).longValue();
-            log.info("User {} submitting card_id: {} in room {}", user.getNickname(), cardId, roomCode);
-
-            // 카드 정보 조회
-            var card = cardRepository.findById(cardId)
-                    .orElseThrow(() -> CardNotFoundException.EXCEPTION);
-
-            // 참가자 정보 조회
+            // 참가자 정보 먼저 조회 (출제자 확인용)
             var room = roomRepository.findByCode(roomCode)
                     .orElseThrow(() -> RoomNotFoundException.EXCEPTION);
 
@@ -354,14 +341,48 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 throw ExaminerCannotSubmitCardException.EXCEPTION;
             }
 
-            // 제출된 카드 정보 생성
-            var submittedCardInfo = SubmittedCardInfo.of(participant, card);
+            // card_id가 없거나 null인 경우 (시간 초과 등)
+            if (data == null || !data.containsKey("card_id") || data.get("card_id") == null) {
+                log.info("User {} did not submit card (timeout) in room {}", user.getNickname(), roomCode);
 
-            // 메모리에 저장
+                // 제출 시도 카운팅 (null 카드)
+                gameRoundManager.incrementSubmissionAttempt(roomCode);
+
+                // 제출 실패 확인 메시지
+                sendMessage(session, WebSocketMessage.of(
+                        WebSocketMessageType.CARD_SUBMITTED,
+                        roomCode,
+                        "No card submitted (timeout)"
+                ));
+
+                log.info("Submission attempts in room {}: {}/3", roomCode, gameRoundManager.getSubmissionAttempts(roomCode));
+
+                // 3명 모두 제출 시도 완료 확인 (null 포함)
+                if (gameRoundManager.isAllCardsSubmitted(roomCode)) {
+                    notifyExaminerAllCardsSubmitted(roomCode, room.getId());
+                }
+
+                return;
+            }
+
+            Long cardId = ((Number) data.get("card_id")).longValue();
+            log.info("User {} submitting card_id: {} in room {}", user.getNickname(), cardId, roomCode);
+
+            // 카드 정보 조회
+            var card = cardRepository.findById(cardId)
+                    .orElseThrow(() -> CardNotFoundException.EXCEPTION);
+
+            // 제출된 카드 정보 생성 및 저장
+            var submittedCardInfo = SubmittedCardInfo.of(participant, card);
             gameRoundManager.submitCard(roomCode, submittedCardInfo);
 
-            log.info("User {} submitted card {} in room {} (total submitted: {})",
-                    user.getNickname(), card.getWord(), roomCode, gameRoundManager.getSubmittedCount(roomCode));
+            // 제출 시도 카운팅 (실제 카드)
+            gameRoundManager.incrementSubmissionAttempt(roomCode);
+
+            log.info("User {} submitted card {} in room {} (attempts: {}/3, actual cards: {})",
+                    user.getNickname(), card.getWord(), roomCode,
+                    gameRoundManager.getSubmissionAttempts(roomCode),
+                    gameRoundManager.getSubmittedCount(roomCode));
 
             // 1. 제출 확인용 메시지
             var gameStartData = SubmittedCardInfo.of(user.getId(), card);
@@ -375,84 +396,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
             sessionManager.getGameSessionsByRoom(roomCode)
                     .forEach(s -> sendMessage(s, cardSubmittedMessage));
 
-            // 2. 3명이 모두 제출했는지 확인
+            // 2. 3명 모두 제출 시도 완료 확인 (null 포함)
             if (gameRoundManager.isAllCardsSubmitted(roomCode)) {
-                log.info("All cards submitted in room {}. Notifying examiner...", roomCode);
-
-                // 제출된 모든 카드 조회
-                var allSubmittedCards = gameRoundManager.getSubmittedCards(roomCode);
-
-                // 출제자 찾기
-                var participants = participantRepository.findAllByRoomIdIdWithUser(room.getId());
-                var examiner = participants.stream()
-                        .filter(Participant::isExaminer)
-                        .findFirst()
-                        .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
-
-                log.info("Found examiner: {} (User ID: {})", examiner.getUserId().getNickname(), examiner.getUserId().getId());
-
-                // 출제자의 게임 세션 찾기
-                var gameSessions = sessionManager.getGameSessionsByRoom(roomCode);
-                log.info("Total game sessions in room {}: {}", roomCode, gameSessions.size());
-
-                // 끊어진 세션 필터링 및 정리
-                var activeGameSessions = gameSessions.stream()
-                        .filter(s -> {
-                            if (!s.isOpen()) {
-                                log.warn("Found closed session in room {}. Removing...", roomCode);
-                                sessionManager.removeSession(roomCode, s);
-                                return false;
-                            }
-                            return true;
-                        })
-                        .toList();
-
-                log.info("Active game sessions in room {}: {}", roomCode, activeGameSessions.size());
-
-                var examinerSession = activeGameSessions.stream()
-                        .filter(s -> {
-                            User sessionUser = (User) s.getAttributes().get("userPrincipal");
-                            if (sessionUser != null) {
-                                log.info("Checking session for user: {} (ID: {}), isOpen: {}",
-                                        sessionUser.getNickname(), sessionUser.getId(), s.isOpen());
-                                return sessionUser.getId().equals(examiner.getUserId().getId());
-                            }
-                            log.warn("Session with null userPrincipal found in room {}", roomCode);
-                            return false;
-                        })
-                        .findFirst();
-
-                // 출제자에게만 제출된 카드 목록 전송
-                if (examinerSession.isPresent()) {
-                    var examinerSess = examinerSession.get();
-                    log.info("Sending ALL_CARDS_SUBMITTED to examiner: {} (session open: {})",
-                            examiner.getUserId().getNickname(), examinerSess.isOpen());
-
-                    try {
-                        sendMessage(examinerSess, WebSocketMessage.withData(
-                                WebSocketMessageType.ALL_CARDS_SUBMITTED,
-                                roomCode,
-                                allSubmittedCards,
-                                "All cards have been submitted"
-                        ));
-                        log.info("Successfully sent ALL_CARDS_SUBMITTED to examiner");
-                    } catch (Exception e) {
-                        log.error("Failed to send message to examiner: {}", e.getMessage());
-                        // 세션이 실제로 끊어진 경우 정리
-                        sessionManager.removeSession(roomCode, examinerSess);
-                    }
-                } else {
-                    log.error("Examiner session not found for user {} (ID: {}) in room {}. Active sessions: {}",
-                            examiner.getUserId().getNickname(), examiner.getUserId().getId(), roomCode, activeGameSessions.size());
-
-                    // 디버깅: 현재 활성 세션의 모든 유저 출력
-                    activeGameSessions.forEach(s -> {
-                        User sessionUser = (User) s.getAttributes().get("userPrincipal");
-                        if (sessionUser != null) {
-                            log.error("Available session - User: {} (ID: {})", sessionUser.getNickname(), sessionUser.getId());
-                        }
-                    });
-                }
+                notifyExaminerAllCardsSubmitted(roomCode, room.getId());
             }
 
         } catch (UrikkiriException e) {
@@ -460,6 +406,94 @@ public class WebSocketHandler extends TextWebSocketHandler {
         } catch (Exception e) {
             log.error("Error handling card submission", e);
             sendExceptionMessage(session, WebSocketInvalidMessageFormat.EXCEPTION);
+        }
+    }
+
+    /**
+     * 출제자에게 모든 카드 제출 완료 알림 (실제 제출된 카드만 전송)
+     */
+    private void notifyExaminerAllCardsSubmitted(String roomCode, Long roomId) {
+        try {
+            log.info("All cards submission attempts completed in room {}. Notifying examiner...", roomCode);
+
+            // 제출된 모든 카드 조회 (null이 아닌 실제 제출된 카드만)
+            var allSubmittedCards = gameRoundManager.getSubmittedCards(roomCode);
+
+            log.info("Actual submitted cards in room {}: {} (null cards excluded)", roomCode, allSubmittedCards.size());
+
+            // 출제자 찾기
+            var participants = participantRepository.findAllByRoomIdIdWithUser(roomId);
+            var examiner = participants.stream()
+                    .filter(Participant::isExaminer)
+                    .findFirst()
+                    .orElseThrow(() -> ExaminerNotFoundException.EXCEPTION);
+
+            log.info("Found examiner: {} (User ID: {})", examiner.getUserId().getNickname(), examiner.getUserId().getId());
+
+            // 출제자의 게임 세션 찾기
+            var gameSessions = sessionManager.getGameSessionsByRoom(roomCode);
+            log.info("Total game sessions in room {}: {}", roomCode, gameSessions.size());
+
+            // 끊어진 세션 필터링 및 정리
+            var activeGameSessions = gameSessions.stream()
+                    .filter(s -> {
+                        if (!s.isOpen()) {
+                            log.warn("Found closed session in room {}. Removing...", roomCode);
+                            sessionManager.removeSession(roomCode, s);
+                            return false;
+                        }
+                        return true;
+                    })
+                    .toList();
+
+            log.info("Active game sessions in room {}: {}", roomCode, activeGameSessions.size());
+
+            var examinerSession = activeGameSessions.stream()
+                    .filter(s -> {
+                        User sessionUser = (User) s.getAttributes().get("userPrincipal");
+                        if (sessionUser != null) {
+                            log.info("Checking session for user: {} (ID: {}), isOpen: {}",
+                                    sessionUser.getNickname(), sessionUser.getId(), s.isOpen());
+                            return sessionUser.getId().equals(examiner.getUserId().getId());
+                        }
+                        log.warn("Session with null userPrincipal found in room {}", roomCode);
+                        return false;
+                    })
+                    .findFirst();
+
+            // 출제자에게만 제출된 카드 목록 전송 (실제 카드만)
+            if (examinerSession.isPresent()) {
+                var examinerSess = examinerSession.get();
+                log.info("Sending ALL_CARDS_SUBMITTED to examiner: {} (session open: {})",
+                        examiner.getUserId().getNickname(), examinerSess.isOpen());
+
+                try {
+                    sendMessage(examinerSess, WebSocketMessage.withData(
+                            WebSocketMessageType.ALL_CARDS_SUBMITTED,
+                            roomCode,
+                            allSubmittedCards,
+                            "All cards have been submitted"
+                    ));
+                    log.info("Successfully sent ALL_CARDS_SUBMITTED to examiner with {} cards", allSubmittedCards.size());
+                } catch (Exception e) {
+                    log.error("Failed to send message to examiner: {}", e.getMessage());
+                    // 세션이 실제로 끊어진 경우 정리
+                    sessionManager.removeSession(roomCode, examinerSess);
+                }
+            } else {
+                log.error("Examiner session not found for user {} (ID: {}) in room {}. Active sessions: {}",
+                        examiner.getUserId().getNickname(), examiner.getUserId().getId(), roomCode, activeGameSessions.size());
+
+                // 디버깅: 현재 활성 세션의 모든 유저 출력
+                activeGameSessions.forEach(s -> {
+                    User sessionUser = (User) s.getAttributes().get("userPrincipal");
+                    if (sessionUser != null) {
+                        log.error("Available session - User: {} (ID: {})", sessionUser.getNickname(), sessionUser.getId());
+                    }
+                });
+            }
+        } catch (Exception e) {
+            log.error("Error notifying examiner in room {}", roomCode, e);
         }
     }
 
