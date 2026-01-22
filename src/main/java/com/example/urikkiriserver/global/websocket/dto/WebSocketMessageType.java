@@ -3,6 +3,8 @@ package com.example.urikkiriserver.global.websocket.dto;
 public enum WebSocketMessageType {
     CONNECTED,
 
+    KEEPALIVE,
+
     CREATE_ROOM,
     ROOM_CREATED,
     JOIN_ROOM,

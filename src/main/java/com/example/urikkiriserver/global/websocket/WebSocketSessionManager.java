@@ -87,4 +87,18 @@ public class WebSocketSessionManager {
                 .findFirst()
                 .orElse(null);
     }
+
+    // 모든 로비 세션 가져오기
+    public Set<WebSocketSession> getAllLobbySessions() {
+        Set<WebSocketSession> allSessions = new CopyOnWriteArraySet<>();
+        lobbyRoomSessions.values().forEach(allSessions::addAll);
+        return allSessions;
+    }
+
+    // 모든 게임 세션 가져오기
+    public Set<WebSocketSession> getAllGameSessions() {
+        Set<WebSocketSession> allSessions = new CopyOnWriteArraySet<>();
+        gameRoomSessions.values().forEach(allSessions::addAll);
+        return allSessions;
+    }
 }
